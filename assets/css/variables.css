@@ -1,0 +1,37 @@
+/* Default: Light Mode */
+:root {
+    --bg: #f3f3f2;
+    --surface: #f8f8f7;
+    --raised: #f0ede8;
+    --rim: #e0dcd5;
+    --gold: #f59b0a;
+    --gold-dim: rgba(217, 142, 22, 0.1);
+    --text: #1c1a17b2;
+    --t2: rgba(26, 25, 23, 0.6);
+    --t3: rgba(26, 25, 23, 0.35);
+    --border: rgba(211, 209, 207, 1.0);
+    --border2: rgba(0, 0, 0, 0.15);
+    --danger: #d93d3d;
+    --ok: #27a858;
+
+    --font-main: 'Poppins', sans-serif;
+    --font-heading: 'Syne', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+}
+
+/* Dark Mode Override */
+[data-theme='dark'] {
+    --bg: #0c0b09;
+    --surface: #181613;
+    --raised: #201e1a;
+    --rim: #2c2a25;
+    --gold: #f59b0a;
+    --gold-dim: rgba(245, 167, 42, 0.13);
+    --text: #f0ece58c;
+    --t2: rgba(240, 236, 229, 0.55);
+    --t3: rgba(240, 236, 229, 0.28);
+    --border: rgba(255, 255, 255, 0.07);
+    --border2: rgba(255, 255, 255, 0.13);
+    --danger: #ff5e5e;
+    --ok: #4ade80;
+}
