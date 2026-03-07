@@ -446,7 +446,6 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--bg);
-    background-image: radial-gradient(ellipse 60% 55% at 50% 38%, rgba(245, 167, 42, .07) 0%, transparent 68%);
 }
 
 .c-login__panel {
