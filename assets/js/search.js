@@ -5,15 +5,21 @@ export function initTableSearch() {
 
     if (!searchInput) return;
 
-    searchInput.addEventListener('keyup', () => {
-        const query = searchInput.value.toLowerCase();
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
 
         tableRows.forEach(row => {
-            // Get all text content in the row and convert to lowercase
-            const text = row.textContent.toLowerCase();
+            // Target only the elements containing the name and ID
+            const nameElement = row.querySelector('.c-member-info__name');
+            const idElement = row.querySelector('.c-member-info__id');
             
-            // Toggle display: show if it contains the query, hide if not
-            row.style.display = text.includes(query) ? '' : 'none';
+            // Combine their text for searching
+            const nameText = nameElement ? nameElement.textContent.toLowerCase() : '';
+            const idText = idElement ? idElement.textContent.toLowerCase() : '';
+            
+            // Show row if query is in name OR in ID, otherwise hide
+            const isMatch = nameText.includes(query) || idText.includes(query);
+            row.style.display = isMatch ? '' : 'none';
         });
     });
 }
