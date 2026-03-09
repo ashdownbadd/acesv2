@@ -10,4 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
     initThemeToggle();
     initTableSearch(); // Initialize it here
+    initSettingsForm();
+    initImagePreview();
 });
