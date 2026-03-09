@@ -296,14 +296,14 @@ body {
 
 .c-table-card__title {
     font-family: var(--font-heading);
-    font-weight: 700;
+    font-weight: bold;
     font-size: 0.9rem;
 }
 
 .c-table-card__search {
     background: var(--raised);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 30px;
     padding: 6px 12px;
     font-size: 0.75rem;
     color: var(--text);
