@@ -21,6 +21,7 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+
 // Handle Logout Action
 if ($action === 'logout') {
     $auth->logout();
@@ -63,14 +64,24 @@ if ($action === 'logout') {
         // Authentication View
         include __DIR__ . '/views/auth/login.php';
     } else {
-        $role = $auth->getRole();
+    $role = $auth->getRole();
+    $page = $_GET['page'] ?? 'dashboard'; // Get the requested page
 
-        if ($role === 'admin') {
-            include __DIR__ . '/views/auth/admin/dashboard.php';
-        } else {
-            include __DIR__ . '/views/auth/member/profile.php';
+    if ($role === 'admin') {
+        // Route admin pages
+        switch ($page) {
+            case 'settings':
+                include __DIR__ . '/views/auth/admin/settings.php';
+                break;
+            case 'dashboard':
+            default:
+                include __DIR__ . '/views/auth/admin/dashboard.php';
+                break;
         }
+    } else {
+        include __DIR__ . '/views/auth/member/profile.php';
     }
+}
     ?>
 
     <script src="assets/js/theme.js"></script>

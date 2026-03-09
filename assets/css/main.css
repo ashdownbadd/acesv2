@@ -1,3 +1,6 @@
+@import 'variables.css';
+@import 'settings.css';
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -384,39 +387,39 @@ body {
 }
 
 .c-badge--active {
-    color: var(--ok);
-    background: color-mix(in srgb, var(--ok), transparent 90%);
-    border-color: color-mix(in srgb, var(--ok), transparent 70%);
-}
-
-.c-badge--overdue {
-    color: #fbbf24;
-    background: rgba(251, 191, 36, 0.1);
-    border-color: rgba(251, 191, 36, 0.2);
+    color: var(--status-active, #27a858);
+    background: color-mix(in srgb, var(--status-active, #27a858), transparent 90%);
+    border-color: color-mix(in srgb, var(--status-active, #27a858), transparent 80%);
 }
 
 .c-badge--deceased {
-    color: var(--t2);
-    background: var(--rim);
-    border-color: var(--border2);
+    color: var(--status-deceased, #4b5563);
+    background: color-mix(in srgb, var(--status-deceased, #4b5563), transparent 90%);
+    border-color: color-mix(in srgb, var(--status-deceased, #4b5563), transparent 80%);
 }
 
 .c-badge--delisted {
-    color: var(--danger);
-    background: color-mix(in srgb, var(--danger), transparent 90%);
-    border-color: color-mix(in srgb, var(--danger), transparent 70%);
+    color: var(--status-delisted, #d93d3d);
+    background: color-mix(in srgb, var(--status-delisted, #d93d3d), transparent 90%);
+    border-color: color-mix(in srgb, var(--status-delisted, #d93d3d), transparent 80%);
 }
 
 .c-badge--on-hold {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.2);
+    color: var(--status-hold, #3b82f6);
+    background: color-mix(in srgb, var(--status-hold, #3b82f6), transparent 90%);
+    border-color: color-mix(in srgb, var(--status-hold, #3b82f6), transparent 80%);
+}
+
+.c-badge--overdue {
+    color: var(--status-overdue, #f59b0a);
+    background: color-mix(in srgb, var(--status-overdue, #f59b0a), transparent 90%);
+    border-color: color-mix(in srgb, var(--status-overdue, #f59b0a), transparent 80%);
 }
 
 .c-badge--under-litigation {
-    color: #a855f7;
-    background: rgba(168, 85, 247, 0.1);
-    border-color: rgba(168, 85, 247, 0.2);
+    color: var(--status-litigation, #a855f7);
+    background: color-mix(in srgb, var(--status-litigation, #a855f7), transparent 90%);
+    border-color: color-mix(in srgb, var(--status-litigation, #a855f7), transparent 80%);
 }
 
 .c-modal {
@@ -446,7 +449,6 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--bg);
-    background-image: radial-gradient(ellipse 60% 55% at 50% 38%, rgba(245, 167, 42, .07) 0%, transparent 68%);
 }
 
 .c-login__panel {

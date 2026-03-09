@@ -1,6 +1,4 @@
-// assets/js/theme.js
 
-// Add "export" before the function keyword
 export function initThemeToggle() {
     const themeToggle = document.getElementById('theme-toggle');
 

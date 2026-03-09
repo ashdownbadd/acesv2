@@ -1,0 +1,59 @@
+/* Bento Grid Layout */
+.c-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.c-bento-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 24px;
+}
+
+.c-settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.c-settings-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--t3);
+    letter-spacing: 0.1em;
+}
+
+.c-settings-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 8px;
+    color: var(--text);
+    width: 100%;
+}
+
+.c-avatar-upload {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.c-avatar-upload__img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--rim);
+}
+
+.c-settings-submit {
+    background: var(--gold);
+    color: var(--bg);
+    font-weight: 700;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
