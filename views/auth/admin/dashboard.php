@@ -41,7 +41,6 @@ if (!function_exists('fullName')) {
 ?>
 
 <div class="l-app">
-    <?php include __DIR__ . '/../partials/navbar.php'; ?>
     <div class="l-container">
         <main class="l-app__body">
             <div class="c-kpi-grid">

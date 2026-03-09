@@ -1,48 +1,81 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
-if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit(); }
-
-$user = [
-    'name' => $_SESSION['name'] ?? 'Admin',
-    'role' => ucfirst($_SESSION['role'] ?? 'Staff'),
-    'initials' => strtoupper(substr($_SESSION['name'] ?? 'A', 0, 1) . substr(strrchr($_SESSION['name'] ?? ' ', ' '), 1, 1))
-];
-$isAdmin = ($_SESSION['role'] ?? '') === 'admin';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
 ?>
 
+<div class="l-container">
+    <main class="l-app__body l-settings-wrapper">
+        <div class="c-settings-header" style="display: flex; justify-content: flex-end; margin-bottom: 24px;">
+            <a href="?page=dashboard" class="c-back-btn">← Back</a>
+        </div>
 
-<div class="l-app">
-    <?php include __DIR__ . '/../partials/navbar.php'; ?>
+        <form id="settings-form" action="?action=update_profile" method="POST" enctype="multipart/form-data" class="c-settings-grid">
 
-    <div class="l-container">
-        <main class="l-app__body">
-            <div class="c-settings-header" style="margin-bottom: 24px;">
-                <a href="?page=dashboard" class="c-back-link">← Back to Dashboard</a>
-                <h1 class="c-settings-title">Settings</h1>
+            <div class="c-bento-card c-bento-card--avatar">
+                <div class="c-avatar-wrapper">
+
+                    <img src="/acesv2/assets/img/uploads/<?= htmlspecialchars($_SESSION['avatar'] ?? '') ?>"
+                        alt="Profile"
+                        class="c-avatar-img"
+                        style="<?= empty($_SESSION['avatar']) ? 'display: none;' : 'display: block;' ?>">
+
+                    <?php if (empty($_SESSION['avatar'])): ?>
+                        <div class="c-avatar-img c-avatar-placeholder" style="display: flex;"></div>
+                    <?php endif; ?>
+
+                    <input type="file" name="avatar" id="avatar-upload" accept="image/*">
+                    <label for="avatar-upload" class="c-avatar-camera">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </label>
+                </div>
+
+                <h2 class="c-avatar-name"><?= htmlspecialchars($_SESSION['role'] ?? 'User') ?></h2>
+                <p class="c-avatar-id">ID: <?= htmlspecialchars($_SESSION['user_id']) ?></p>
             </div>
 
-            <form action="?action=update_profile" method="POST" enctype="multipart/form-data" class="c-settings-grid">
-                <div class="c-bento-card">
-                    <div class="c-settings-section">
-                        <label class="c-settings-label">Profile Picture</label>
-                        <div class="c-avatar-upload" id="sav-ring">
-                            <img src="assets/img/admin-avatar.jpg" alt="Profile" id="settings-av" class="c-avatar-upload__img">
-                            <input type="file" name="avatar" id="sav-file" hidden>
-                            <button type="button" class="c-avatar-upload__btn" id="sav-pick-btn">Change</button>
+
+            <!-- Account Details -->
+            <div class="c-bento-card c-bento-card--details">
+                <div class="c-settings-section">
+
+                    <label class="c-settings-label">Account Details</label>
+
+                    <label class="c-settings-label">Full Name</label>
+                    <input type="text" name="name" class="c-settings-input" value="<?= htmlspecialchars($_SESSION['name'] ?? '') ?>">
+
+                    <label class="c-settings-label">Username</label>
+                    <input type="text" name="username" class="c-settings-input" value="<?= htmlspecialchars($_SESSION['username'] ?? '') ?>">
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div>
+                            <label class="c-settings-label">New Password</label>
+                            <input type="password" name="password" class="c-settings-input" placeholder="••••••••">
+                        </div>
+
+                        <div>
+                            <label class="c-settings-label">Confirm Password</label>
+                            <input type="password" name="confirm_password" class="c-settings-input" placeholder="••••••••">
                         </div>
                     </div>
+
                 </div>
 
-                <div class="c-bento-card">
-                    <div class="c-settings-section">
-                        <label class="c-settings-label">Account Details</label>
-                        <input type="text" name="name" class="c-settings-input" value="<?= htmlspecialchars($_SESSION['name'] ?? '') ?>">
-                        <input type="text" name="username" class="c-settings-input" value="<?= htmlspecialchars($_SESSION['username'] ?? '') ?>">
-                        <input type="password" name="password" class="c-settings-input" placeholder="New Password">
-                    </div>
-                    <button type="submit" class="c-settings-submit" style="margin-top:20px; width:100%;">Save Changes</button>
+                <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+                    <button type="submit" id="save-btn" class="c-settings-submit is-disabled" disabled>
+                        Save Changes
+                    </button>
                 </div>
-            </form>
-        </main>
-    </div>
+
+            </div>
+
+        </form>
+    </main>
 </div>

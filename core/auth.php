@@ -24,6 +24,7 @@ class Auth
             $_SESSION['username'] = $user['username'];
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = 'admin';
+            $_SESSION['avatar'] = $user['avatar'];
             return true;
         }
         return false;
