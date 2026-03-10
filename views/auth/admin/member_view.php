@@ -16,9 +16,9 @@ if (!$m) {
 <div class="pg-centered">
     <div class="mvw pg">
 
-            <div class="mv-grid mv-grid--top">
+        <div class="mv-grid mv-grid--top">
 
-            <!-- BALANCE -->ddsdasnncvjsadsadsa
+
             <div class="mv-card mv-card--balance">
                 <div class="mv-bl">Current Balance</div>
                 <div class="mv-balance">₱<?= number_format($m['balance'] ?? 0) ?></div>
@@ -151,29 +151,16 @@ if (!$m) {
             </div>
 
 
-            <!-- RIGHT COLUMN -->
             <div class="mv-right">
-
                 <div class="mv-card mv-card--remarks">
-
                     <div class="mv-ct">Admin Remarks</div>
-
-                    <textarea class="mv-remarks"><?= $m['remarks'] ?></textarea>
-
+                    <textarea class="mv-remarks"><?= htmlspecialchars($m['remarks']) ?></textarea>
                 </div>
 
                 <div class="mv-btn-stack">
-
-                    <button class="mv-btn mv-btn--save">
-                        Save Changes
-                    </button>
-
-                    <button class="mv-btn mv-btn--close">
-                        Close
-                    </button>
-
+                    <button class="mv-btn mv-btn--save">Save Changes</button>
+                    <button class="mv-btn mv-btn--close">Close</button>
                 </div>
-
             </div>
 
         </div>
