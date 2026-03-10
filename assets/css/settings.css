@@ -30,12 +30,25 @@
     flex: 1 1 250px;
 }
 
-/* Avatar Wrapper */
 .c-avatar-wrapper {
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
+    height: 160px;
+}
+
+.c-avatar-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 160px;
+    height: 160px;
+    background: #f7af3b;
+    border-radius: 50%;
+    z-index: 1;
 }
 
 .c-avatar-placeholder {
@@ -52,17 +65,24 @@
     border-radius: 50%;
     object-fit: cover;
     display: flex;
-    border: 2px solid white;
     align-items: center;
+    border: 3px solid #ffffff;
     justify-content: center;
 }
 
-/* Hide File Input */
+.c-avatar-img,
+.c-avatar-placeholder {
+    z-index: 2;
+}
+
+.c-avatar-camera {
+    z-index: 3;
+}
+
 #avatar-upload {
     display: none;
 }
 
-/* Camera Button */
 .c-avatar-camera {
     position: absolute;
     bottom: 6px;
