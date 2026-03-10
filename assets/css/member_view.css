@@ -1,0 +1,195 @@
+.mvw {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 0 32px;
+}
+
+.mv-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.mv-grid--top {
+    grid-template-columns: 380px 1fr;
+    align-items: stretch;
+}
+
+.mv-grid--bottom {
+    display: grid;
+    grid-template-columns: 1.35fr .75fr;
+    gap: 20px;
+    align-items: start; /* Prevents Contact card from stretching unnecessarily */
+}
+
+.mv-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 26px;
+}
+
+
+.mv-card--balance {
+    border: 1px solid var(--rim);
+    position: relative;
+}
+
+.mv-bl {
+    font-size: .65rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--t3);
+    margin-bottom: 10px;
+}
+
+.mv-balance {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: var(--font-heading);
+}
+
+.mv-id {
+    font-size: .72rem;
+    margin-top: 10px;
+    color: var(--t2);
+    font-family: var(--font-mono);
+}
+
+
+/* TITLES */
+
+.mv-ct {
+    font-size: .65rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--t3);
+    margin-bottom: 18px;
+}
+
+.mv-form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 18px;
+}
+
+.mv-form-grid--personal {
+    grid-template-columns: 110px 1fr 1fr 1fr 80px;
+    gap: 14px 18px;
+}
+
+
+/* FIELD */
+
+.mv-f {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mv-f--full {
+    grid-column: 1/-1;
+    margin-top: 6px;
+}
+
+
+/* LABEL */
+
+.mv-lbl {
+    font-size: .63rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--t3);
+}
+
+.mv-input {
+    box-sizing: border-box;
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    height: 38px;
+    padding: 8px 16px;
+    font-size: .85rem;
+    color: var(--text);
+    font-family: var(--font-main);
+    outline: none;
+}
+
+/* RIGHT COLUMN STRUCTURE */
+
+.mv-right {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%; /* Ensures this column matches the sibling's height */
+}
+
+
+.mv-card--contact {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Adjust button stack to sit at the bottom or just below the cards */
+.mv-btn-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px; /* Space between card and buttons */
+}
+.mv-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-dim);
+}
+
+.mv-remarks {
+    width: 100%;
+    flex-grow: 1; /* Fills remaining height inside the card */
+    padding: 12px 16px;
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-main);
+    resize: none;
+}
+
+
+/* BUTTONS */
+
+.mv-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: var(--font-main);
+}
+
+
+/* SAVE BUTTON */
+
+.mv-btn--save {
+    background: var(--gold);
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.mv-btn--save:hover {
+    filter: brightness(1.05);
+}
+
+
+/* CLOSE BUTTON */
+
+.mv-btn--close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--t2);
+}
+
+.mv-btn--close:hover {
+    background: var(--raised);
+}

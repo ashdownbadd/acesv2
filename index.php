@@ -82,6 +82,8 @@ if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="/acesv2/assets/css/variables.css">
     <link rel="stylesheet" href="/acesv2/assets/css/reset.css">
     <link rel="stylesheet" href="/acesv2/assets/css/main.css">
+    <link rel="stylesheet" href="/acesv2/assets/css/member_view.css">
+
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
 
@@ -120,13 +122,14 @@ if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 case 'settings':
                     include __DIR__ . '/views/auth/admin/settings.php';
                     break;
+                case 'member_view':
+                    include __DIR__ . '/views/auth/admin/member_view.php';
+                    break;
                 case 'dashboard':
                 default:
                     include __DIR__ . '/views/auth/admin/dashboard.php';
                     break;
             }
-        } else {
-            include __DIR__ . '/views/auth/member/profile.php';
         }
     }
     ?>

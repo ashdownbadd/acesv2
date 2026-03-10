@@ -80,7 +80,9 @@ if (!function_exists('fullName')) {
                         </thead>
                         <tbody>
                             <?php foreach ($members as $m): ?>
-                                <tr class="c-table__row" onclick="window.location='?page=profile_edit&id=<?= $m['id'] ?>'">
+                                <tr class="c-table__row"
+                                    onclick="window.location='?page=member_view&member_id=<?= $m['id'] ?>'"
+                                    style="cursor: pointer;">
                                     <td class="c-table__cell c-table__cell--id"><?= $m['id'] ?></td>
                                     <td class="c-table__cell">
                                         <div class="c-member-info">
