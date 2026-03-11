@@ -136,6 +136,7 @@ if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script type="module" src="/acesv2/assets/js/theme.js"></script>
     <script type="module" src="/acesv2/assets/js/app.js"></script>
+    <script type="module" src="/acesv2/assets/js/member_view.js"></script>
 </body>
 
 </html>

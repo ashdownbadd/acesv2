@@ -7,7 +7,6 @@
 .c-settings-grid {
     display: flex;
     flex-wrap: wrap;
-    /* Allows stacking */
     gap: 24px;
 }
 
