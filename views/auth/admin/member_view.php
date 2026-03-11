@@ -14,153 +14,150 @@ if (!$m) {
 ?>
 
 <div class="pg-centered">
-    <div class="mvw pg">
+    <div class="mv">
 
-        <div class="mv-grid mv-grid--top">
+        <div class="mv__grid">
+
+            <!-- 1 BALANCE -->
+            <section class="mv-card mv-card--balance">
+                <div class="mv-card__label">Current Balance</div>
+                <div class="mv-card__balance">₱<?= number_format($m['balance'] ?? 0) ?></div>
+            </section>
 
 
-            <div class="mv-card mv-card--balance">
-                <div class="mv-bl">Current Balance</div>
-                <div class="mv-balance">₱<?= number_format($m['balance'] ?? 0) ?></div>
-                <div class="mv-id"><?= htmlspecialchars($m['member_id']) ?></div>
-            </div>
+            <!-- 2 MEMBERSHIP -->
+            <section class="mv-card mv-card--membership">
 
-            <!-- MEMBERSHIP -->
-            <div class="mv-card mv-card--membership">
+                <header class="mv-card__title">Membership Details</header>
 
-                <div class="mv-ct">Membership Details</div>
+                <div class="mv-form">
 
-                <div class="mv-form-grid">
-
-                    <div class="mv-f">
-                        <div class="mv-lbl">Member ID</div>
-                        <input class="mv-input"
-                            value="<?= htmlspecialchars($m['member_id']) ?>" readonly>
+                    <div class="mv-field">
+                        <label class="mv-label">Member ID</label>
+                        <input class="mv-input" value="<?= htmlspecialchars($m['member_id']) ?>" readonly>
                     </div>
 
-                    <div class="mv-f">
-                        <div class="mv-lbl">Type</div>
+                    <div class="mv-field">
+                        <label class="mv-label">Type</label>
                         <select class="mv-input">
                             <option><?= htmlspecialchars($m['membership_type']) ?></option>
                         </select>
                     </div>
 
-                    <div class="mv-f">
-                        <div class="mv-lbl">Status</div>
+                    <div class="mv-field">
+                        <label class="mv-label">Status</label>
                         <select class="mv-input">
                             <option><?= htmlspecialchars($m['status']) ?></option>
                         </select>
                     </div>
 
                 </div>
-            </div>
 
-        </div>
-
-
-        <!-- PERSONAL -->
-        <div class="mv-card mv-card--personal">
-
-            <div class="mv-ct">Personal Details</div>
-
-            <div class="mv-form-grid mv-form-grid--personal">
-
-                <div class="mv-f">
-                    <div class="mv-lbl">Prefix</div>
-                    <input class="mv-input" value="<?= $m['prefix'] ?>">
-                </div>
-
-                <div class="mv-f">
-                    <div class="mv-lbl">First Name</div>
-                    <input class="mv-input" value="<?= $m['first_name'] ?>">
-                </div>
-
-                <div class="mv-f">
-                    <div class="mv-lbl">Middle Name</div>
-                    <input class="mv-input" value="<?= $m['middle_name'] ?>">
-                </div>
-
-                <div class="mv-f">
-                    <div class="mv-lbl">Last Name</div>
-                    <input class="mv-input" value="<?= $m['last_name'] ?>">
-                </div>
-
-                <div class="mv-f">
-                    <div class="mv-lbl">Suffix</div>
-                    <input class="mv-input" value="<?= $m['suffix'] ?>">
-                </div>
-
-                <div class="mv-f">
-                    <div class="mv-lbl">Birthdate</div>
-                    <input type="date" class="mv-input"
-                        value="<?= $m['birthdate'] ?>">
-                </div>
-
-                <div class="mv-f">
-                    <div class="mv-lbl">Death Date</div>
-                    <input type="date" class="mv-input"
-                        value="<?= $m['death_date'] ?>">
-                </div>
-
-                <div class="mv-f">
-                    <div class="mv-lbl">Civil Status</div>
-                    <select class="mv-input">
-                        <option><?= $m['civil_status'] ?></option>
-                    </select>
-                </div>
-
-                <div class="mv-f mv-f--full">
-                    <div class="mv-lbl">Full Address</div>
-                    <textarea class="mv-input"><?= $m['address'] ?></textarea>
-                </div>
-
-            </div>
-        </div>
+            </section>
 
 
-        <!-- BOTTOM GRID -->
-        <div class="mv-grid mv-grid--bottom">
+            <!-- 3 PERSONAL -->
+            <section class="mv-card mv-card--personal">
 
-            <!-- CONTACT -->
-            <div class="mv-card mv-card--contact">
+                <header class="mv-card__title">Personal Details</header>
 
-                <div class="mv-ct">Contact Information</div>
+                <div class="mv-form mv-form--personal">
 
-                <div class="mv-form-grid">
-
-                    <div class="mv-f mv-f--full">
-                        <div class="mv-lbl">Email Address</div>
-                        <input class="mv-input"
-                            value="<?= $m['email'] ?>">
+                    <div class="mv-field">
+                        <label class="mv-label">Prefix</label>
+                        <input class="mv-input" value="<?= $m['prefix'] ?>">
                     </div>
 
-                    <div class="mv-f">
-                        <div class="mv-lbl">Mobile</div>
-                        <input class="mv-input"
-                            value="<?= $m['phone_number'] ?>">
+                    <div class="mv-field">
+                        <label class="mv-label">First Name</label>
+                        <input class="mv-input" value="<?= $m['first_name'] ?>">
                     </div>
 
-                    <div class="mv-f">
-                        <div class="mv-lbl">Telephone</div>
-                        <input class="mv-input"
-                            value="<?= $m['telephone_number'] ?>">
+                    <div class="mv-field">
+                        <label class="mv-label">Middle Name</label>
+                        <input class="mv-input" value="<?= $m['middle_name'] ?>">
+                    </div>
+
+                    <div class="mv-field">
+                        <label class="mv-label">Last Name</label>
+                        <input class="mv-input" value="<?= $m['last_name'] ?>">
+                    </div>
+
+                    <div class="mv-field">
+                        <label class="mv-label">Suffix</label>
+                        <input class="mv-input" value="<?= $m['suffix'] ?>">
+                    </div>
+
+                    <div class="mv-field">
+                        <label class="mv-label">Birthdate</label>
+                        <input type="date" class="mv-input" value="<?= $m['birthdate'] ?>">
+                    </div>
+
+                    <div class="mv-field">
+                        <label class="mv-label">Death Date</label>
+                        <input type="date" class="mv-input" value="<?= $m['death_date'] ?>">
+                    </div>
+
+                    <div class="mv-field">
+                        <label class="mv-label">Civil Status</label>
+                        <select class="mv-input">
+                            <option><?= $m['civil_status'] ?></option>
+                        </select>
+                    </div>
+
+                    <div class="mv-field mv-field--full">
+                        <label class="mv-label">Full Address</label>
+                        <textarea class="mv-input"><?= $m['address'] ?></textarea>
                     </div>
 
                 </div>
 
-            </div>
+            </section>
 
 
-            <div class="mv-right">
-                <div class="mv-card mv-card--remarks">
-                    <div class="mv-ct">Admin Remarks</div>
-                    <textarea class="mv-remarks"><?= htmlspecialchars($m['remarks']) ?></textarea>
+            <!-- 4 CONTACT -->
+            <section class="mv-card mv-card--contact">
+
+                <header class="mv-card__title">Contact Information</header>
+
+                <div class="mv-form">
+
+                    <div class="mv-field mv-field--full">
+                        <label class="mv-label">Email Address</label>
+                        <input class="mv-input" value="<?= $m['email'] ?>">
+                    </div>
+
+                    <div class="mv-field">
+                        <label class="mv-label">Mobile</label>
+                        <input class="mv-input" value="<?= $m['phone_number'] ?>">
+                    </div>
+
+                    <div class="mv-field">
+                        <label class="mv-label">Telephone</label>
+                        <input class="mv-input" value="<?= $m['telephone_number'] ?>">
+                    </div>
+
                 </div>
 
-                <div class="mv-btn-stack">
-                    <button class="mv-btn mv-btn--save">Save Changes</button>
-                    <button class="mv-btn mv-btn--close">Close</button>
-                </div>
+            </section>
+
+
+            <!-- 5 REMARKS -->
+            <section class="mv-card mv-card--remarks">
+
+                <header class="mv-card__title">Admin Remarks</header>
+
+                <textarea class="mv-remarks"><?= htmlspecialchars($m['remarks']) ?></textarea>
+
+            </section>
+
+
+            <!-- 6 ACTION BAR -->
+            <div class="mv-action-bar">
+
+                <button class="mv-btn mv-btn--save">Save Changes</button>
+                <button class="mv-btn mv-btn--close">Close</button>
+
             </div>
 
         </div>
