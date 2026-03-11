@@ -1,35 +1,41 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('form');
+    const saveBtn = document.querySelector('.mv-btn--save');
     const closeBtn = document.querySelector('.mv-btn--close');
     let isDirty = false;
     let isSubmitting = false;
 
-    // 1. Success Toast Logic
-    const toastTrigger = document.getElementById('toast-trigger');
-    if (toastTrigger) {
-        showToast(toastTrigger.dataset.message, 'success');
-    }
+    saveBtn.disabled = true;
 
-    // 2. Track Changes
     form.addEventListener('input', () => {
         isDirty = true;
+        saveBtn.disabled = false;
     });
 
-    // 3. Handle Form Submission
     form.addEventListener('submit', () => {
-        isSubmitting = true;
+        isSubmitting = true; // Prevents the warning when the user actually saves
     });
 
-    // 4. Close Button & Navigation Logic
+    // Handle Close Button specifically
     closeBtn.addEventListener('click', (e) => {
         if (isDirty) {
-            const confirmLeave = confirm("You have unsaved changes. Are you sure you want to leave?");
-            if (!confirmLeave) {
-                e.preventDefault();
-                return;
+            // If the user confirms, we manually navigate
+            if (confirm("You have unsaved changes. Are you sure you want to leave?")) {
+                isDirty = false; // Disable dirty state so 'beforeunload' doesn't fire
+                window.location.href = "index.php?page=dashboard";
             }
+            // If they cancel, we do nothing and they stay on the page
+        } else {
+            window.location.href = "index.php?page=dashboard";
         }
-        window.location.href = "index.php?page=dashboard";
+    });
+
+    // Browser Refresh/Tab Close Protection
+    window.addEventListener('beforeunload', (e) => {
+        if (isDirty && !isSubmitting) {
+            e.preventDefault();
+            e.returnValue = ''; // This triggers the standard browser dialog
+        }
     });
 
     // 5. Browser Refresh/Tab Close Protection
