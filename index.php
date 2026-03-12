@@ -7,7 +7,6 @@ require_once 'core/db.php';
 $auth = new Auth();
 $action = $_POST['action'] ?? $_GET['action'] ?? null;
 
-// Handle Login Action
 if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
@@ -22,52 +21,75 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Handle Logout Action
 if ($action === 'logout') {
     $auth->logout();
     header("Location: index.php");
     exit();
 }
 
-// Handle Profile Update Action
-if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($auth->isLoggedIn()) {
     $db = (new DB())->connect();
     $userId = $_SESSION['user_id'];
+    $isAdmin = ($_SESSION['role'] ?? '') === 'admin';
 
-    // 1. Update Name and Username
-    $name = $_POST['name'] ?? $_SESSION['name'];
-    $username = $_POST['username'] ?? $_SESSION['username'];
+    if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $name = $_POST['name'] ?? $_SESSION['name'];
+        $username = $_POST['username'] ?? $_SESSION['username'];
 
-    $stmt = $db->prepare("UPDATE admin SET name = ?, username = ? WHERE id = ?");
-    $stmt->execute([$name, $username, $userId]);
+        $stmt = $db->prepare("UPDATE admin SET name = ?, username = ? WHERE id = ?");
+        $stmt->execute([$name, $username, $userId]);
 
-    $_SESSION['name'] = $name;
-    $_SESSION['username'] = $username;
+        $_SESSION['name'] = $name;
+        $_SESSION['username'] = $username;
 
-    // 2. Handle File Upload
-    if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = __DIR__ . '/assets/img/uploads/';
+        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/assets/img/uploads/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+            $fileExt = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
+            $fileName = 'user_' . $userId . '_' . time() . '.' . $fileExt;
+
+            if (move_uploaded_file($_FILES['avatar']['tmp_name'], $uploadDir . $fileName)) {
+                $stmt = $db->prepare("UPDATE admin SET avatar = ? WHERE id = ?");
+                $stmt->execute([$fileName, $userId]);
+                $_SESSION['avatar'] = $fileName;
+            }
         }
-
-        $fileExt = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-        $fileName = 'user_' . $userId . '_' . time() . '.' . $fileExt;
-        $uploadPath = $uploadDir . $fileName;
-
-        if (move_uploaded_file($_FILES['avatar']['tmp_name'], $uploadPath)) {
-            $stmt = $db->prepare("UPDATE admin SET avatar = ? WHERE id = ?");
-            $stmt->execute([$fileName, $userId]);
-            $_SESSION['avatar'] = $fileName;
-        } else {
-            error_log("Failed to move uploaded file to: " . $uploadPath);
-            die("Error: Could not move file. Check folder permissions for: " . $uploadDir);
-        }
+        header("Location: index.php?page=settings&status=success");
+        exit();
     }
 
-    header("Location: index.php?page=settings&status=success");
-    exit();
+    if ($action === 'delete_member' && $isAdmin) {
+        $id = $_GET['id'] ?? 0;
+        $stmt = $db->prepare("DELETE FROM members WHERE id = ?");
+        $stmt->execute([$id]);
+        header("Location: index.php?page=dashboard&status=deleted");
+        exit();
+    }
+
+    if ($action === 'save_member' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $id = $_POST['id'] ?? null;
+        $data = [
+            $_POST['first_name'],
+            $_POST['middle_name'],
+            $_POST['last_name'],
+            $_POST['membership_type'],
+            $_POST['status'],
+            $_POST['balance'],
+            $id
+        ];
+
+        if ($id) {
+            $sql = "UPDATE members SET first_name=?, middle_name=?, last_name=?, membership_type=?, status=?, balance=? WHERE id=?";
+        } else {
+            array_pop($data);
+            $sql = "INSERT INTO members (first_name, middle_name, last_name, membership_type, status, balance) VALUES (?, ?, ?, ?, ?, ?)";
+        }
+
+        $db->prepare($sql)->execute($data);
+        header("Location: index.php?page=dashboard&status=saved");
+        exit();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -78,30 +100,21 @@ if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
     <title>ACES Management System</title>
-
     <link rel="stylesheet" href="/acesv2/assets/css/variables.css">
     <link rel="stylesheet" href="/acesv2/assets/css/reset.css">
     <link rel="stylesheet" href="/acesv2/assets/css/main.css">
-    <link rel="stylesheet" href="/acesv2/assets/css/member_view.css">
-
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-
+    <link rel="stylesheet" href="/acesv2/assets/css/member.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
     <script>
         (function() {
             const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
+            if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
         })();
     </script>
 </head>
 
 <body>
     <?php
-    /**
-     * Main Routing Controller
-     */
     if (!$auth->isLoggedIn()) {
         include __DIR__ . '/views/auth/login.php';
     } else {
@@ -110,30 +123,28 @@ if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'role' => ucfirst($_SESSION['role'] ?? 'Unassigned'),
             'initials' => strtoupper(substr($_SESSION['name'] ?? 'A', 0, 1) . substr(strrchr($_SESSION['name'] ?? ' ', ' '), 1, 1))
         ];
-        $isAdmin = ($_SESSION['role'] ?? '') === 'admin';
 
         include __DIR__ . '/views/auth/partials/navbar.php';
 
-        $role = $auth->getRole();
         $page = $_GET['page'] ?? 'dashboard';
 
-        if ($role === 'admin') {
-            switch ($page) {
-                case 'settings':
-                    include __DIR__ . '/views/auth/admin/settings.php';
-                    break;
-                case 'member_view':
-                    include __DIR__ . '/views/auth/admin/member_view.php';
-                    break;
-                case 'dashboard':
-                default:
-                    include __DIR__ . '/views/auth/admin/dashboard.php';
-                    break;
-            }
+        switch ($page) {
+            case 'settings':
+                include __DIR__ . '/views/auth/admin/settings.php';
+                break;
+            case 'member_view':
+                include __DIR__ . '/views/auth/admin/member_view.php';
+                break;
+            case 'member_add':
+                include __DIR__ . '/views/auth/admin/member_add.php';
+                break;
+            case 'dashboard':
+            default:
+                include __DIR__ . '/views/auth/admin/dashboard.php';
+                break;
         }
     }
     ?>
-
     <script type="module" src="/acesv2/assets/js/theme.js"></script>
     <script type="module" src="/acesv2/assets/js/app.js"></script>
     <script type="module" src="/acesv2/assets/js/member_view.js"></script>

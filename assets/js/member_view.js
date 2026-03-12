@@ -76,3 +76,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 });
+
+// assets/js/member_view.js
+
+export function initBalanceFormatter() {
+    const balanceInput = document.querySelector('.mv-card__balance');
+
+    if (!balanceInput) return;
+
+    balanceInput.addEventListener('input', (e) => {
+        // 1. Get current value and remove everything except digits and decimal point
+        let value = e.target.value.replace(/[^0-9.]/g, '');
+
+        // 2. Split into integer and decimal parts
+        let parts = value.split('.');
+
+        // 3. Add commas to the integer part
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+        // 4. Rejoin and limit to 2 decimal places if they exist
+        e.target.value = parts.length > 1 ? parts[0] + '.' + parts[1].substring(0, 2) : parts[0];
+    });
+}
+
+// Initialize when the DOM is ready
+document.addEventListener('DOMContentLoaded', initBalanceFormatter);
