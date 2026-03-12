@@ -28,6 +28,23 @@
     grid-area: balance;
 }
 
+input.mv-card__balance {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--gold);
+    font-family: inherit;
+    font-size: 3rem;
+    font-weight: 800;
+    padding: 0;
+    outline: none;
+}
+
+/* Optional: Add hover/focus state for better UX */
+input.mv-card__balance:focus {
+    color: var(--gold);
+}
+
 .mv-card--membership {
     grid-area: membership;
 }

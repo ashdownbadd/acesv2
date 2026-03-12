@@ -101,7 +101,6 @@ body {
     justify-content: center;
     cursor: pointer;
     color: var(--t3);
-    transition: all .2s ease;
     padding: 0;
 }
 
@@ -299,13 +298,61 @@ body {
     font-size: 0.9rem;
 }
 
+/* Container for header actions */
+.c-table-card__actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Updated Search Box to have a fixed height for alignment */
 .c-table-card__search {
     background: var(--raised);
     border: 1px solid var(--border);
-    border-radius: 30px;
-    padding: 6px 12px;
+    border-radius: 8px;
+    /* Changed to match button style */
+    padding: 0 12px;
+    height: 32px;
+    /* Fixed height */
     font-size: 0.75rem;
     color: var(--text);
+    outline: none;
+}
+
+.c-table-card__search:focus {
+    border-color: var(--gold);
+}
+
+.c-btn-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 16px;
+    background: var(--gold);
+    color: var(--surface);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+}
+
+.c-btn-add:hover {
+    filter: brightness(1.1);
+}
+
+.btn-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #e74c3c;
+    cursor: pointer;
 }
 
 .tbl-scroll {

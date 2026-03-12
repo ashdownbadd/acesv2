@@ -7,16 +7,18 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $db = (new DB())->connect();
 
-// Handle Save Changes
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_member'])) {
 
     $targetId = (int)$_POST['member_id'];
+
+    $rawBalance = str_replace(',', '', $_POST['balance']);
+    $cleanBalance = (float)$rawBalance;
 
     $sql = "UPDATE members SET 
             prefix = ?, first_name = ?, middle_name = ?, last_name = ?, suffix = ?, 
             birthdate = ?, death_date = ?, civil_status = ?, address = ?, 
             membership_type = ?, status = ?, email = ?, phone_number = ?, 
-            telephone_number = ?, remarks = ? 
+            telephone_number = ?, remarks = ?, balance = ? 
             WHERE id = ?";
 
     $stmt = $db->prepare($sql);
@@ -37,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_member'])) {
         $_POST['phone_number'],
         $_POST['telephone_number'],
         $_POST['remarks'],
+        $cleanBalance, // Use the sanitized variable here
         $targetId
     ])) {
 
@@ -70,7 +73,10 @@ if (!$m) {
 
                 <section class="mv-card mv-card--balance">
                     <div class="mv-card__label">Current Balance</div>
-                    <div class="mv-card__balance">₱<?= number_format($m['balance'] ?? 0) ?></div>
+                    <input type="text"
+                        class="mv-card__balance"
+                        name="balance"
+                        value="<?= number_format((float)$m['balance'], 2, '.', ',') ?>">
                 </section>
 
                 <section class="mv-card mv-card--membership">
