@@ -17,12 +17,12 @@
     --font-heading: 'Syne', sans-serif;
     --font-mono: 'IBM Plex Mono', monospace;
 
-    --status-active: #166534;
+    --status-active: #10b981;
     --status-deceased: #4b5563;
-    --status-delisted: #991b1b;
-    --status-hold: #1e40af;
-    --status-overdue: #92400e;
-    --status-litigation: #6b21a8;
+    --status-delisted: #ef4444;
+    --status-hold: #3b82f6;
+    --status-overdue: #f59e0b;
+    --status-litigation: #8b5cf6;
 
 }
 

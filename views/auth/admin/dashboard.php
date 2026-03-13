@@ -75,7 +75,7 @@ if (!function_exists('fullName')) {
                     <table class="c-table">
                         <thead>
                             <tr>
-                                <th class="c-table__header">#</th>
+                                <th class="c-table__header">No.</th>
                                 <th class="c-table__header">Name</th>
                                 <th class="c-table__header">Balance</th>
                                 <th class="c-table__header">Status</th>
