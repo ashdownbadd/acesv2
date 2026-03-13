@@ -261,6 +261,12 @@ textarea.mv-input {
     .mv__grid {
         grid-template-columns: 1fr;
         grid-template-areas:
-            "balance" "membership" "personal" "contact" "remarks" "action";
+            "balance"
+            "membership"
+            "personal"
+            "contact"
+            "loan"
+            "remarks"
+            "action";
     }
 }
