@@ -171,6 +171,135 @@ if (!$m) {
                     </div>
                 </section>
 
+                <section class="mv-card mv-card--loan">
+
+                    <header class="mv-card__title">Loan Details</header>
+
+                    <div class="mv-form">
+
+                        <div class="mv-field">
+                            <label class="mv-label">Loan Type</label>
+                            <select class="mv-input loan-type" name="loan_type">
+                                <option>Bridge Financing</option>
+                                <option>Investment Loan</option>
+                                <option>Pension Loan</option>
+                                <option>Productivity Loan</option>
+                                <option>Personal Loan</option>
+                                <option>Salary Loan</option>
+                                <option>Micro-Finance Loan</option>
+                            </select>
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">Principal Amount</label>
+                            <input class="mv-input principal-input" name="principal_amount">
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">Interest Rate (%)</label>
+                            <input class="mv-input interest-input" name="interest_rate" readonly>
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">Terms (Months)</label>
+                            <input class="mv-input term-input" name="terms">
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">Monthly Amortization</label>
+                            <input class="mv-input amort-display" name="monthly_amortization" readonly>
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">Collateral</label>
+                            <select class="mv-input" name="collateral">
+                                <option>Post-Dated Check</option>
+                                <option>Real Property</option>
+                                <option>Chattels / Movable Assets</option>
+                            </select>
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">SOA Status</label>
+                            <select class="mv-input" name="soa_status">
+                                <option>Updated</option>
+                                <option>Pending</option>
+                                <option>Overdue</option>
+                            </select>
+                        </div>
+                        <div class="mv-field mv-field--full">
+
+                            <label class="mv-label">Amortization Schedule Preview</label>
+
+                            <div class="mv-schedule-table">
+
+                                <table id="scheduleTable">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Month</th>
+                                            <th>Principal</th>
+                                            <th>Interest</th>
+                                            <th>Total</th>
+                                            <th>Balance</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" style="text-align:center;">
+                                                Enter loan details to generate schedule
+                                            </td>
+                                        </tr>
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        </div>
+
+                        <div class="mv-field mv-field--full">
+
+                            <label class="mv-label">Loan History</label>
+
+                            <div class="mv-history-table">
+
+                                <table id="loanHistoryTable">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Loan ID</th>
+                                            <th>Loan Type</th>
+                                            <th>Principal</th>
+                                            <th>Interest</th>
+                                            <th>Term</th>
+                                            <th>Monthly</th>
+                                            <th>Status</th>
+                                            <th>Date Released</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        <tr>
+                                            <td colspan="8" style="text-align:center;">
+                                                No loan history available
+                                            </td>
+                                        </tr>
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
                 <section class="mv-card mv-card--remarks">
                     <header class="mv-card__title">Admin Remarks</header>
                     <textarea class="mv-remarks" name="remarks"><?= htmlspecialchars($m['remarks']) ?></textarea>
@@ -185,6 +314,62 @@ if (!$m) {
         </div>
     </div>
 </form>
+
+<script>
+    document.addEventListener('input', function(e) {
+
+        if (e.target.matches('.principal-input, .interest-input, .term-input')) {
+
+            const P = parseFloat(document.querySelector('.principal-input').value) || 0;
+            const R = (parseFloat(document.querySelector('.interest-input').value) || 0) / 100 / 12;
+            const N = parseInt(document.querySelector('.term-input').value) || 0;
+
+            if (P > 0 && R > 0 && N > 0) {
+
+                const x = Math.pow(1 + R, N);
+                const monthly = (P * x * R) / (x - 1);
+
+                document.querySelector('.amort-display').value = monthly.toFixed(2);
+
+                generateSchedule(P, R, N, monthly);
+
+            }
+
+        }
+
+    });
+
+    function generateSchedule(principal, monthlyRate, months, monthlyPayment) {
+
+        const tbody = document.querySelector('#scheduleTable tbody');
+
+        tbody.innerHTML = '';
+
+        let balance = principal;
+
+        for (let i = 1; i <= months; i++) {
+
+            let interest = balance * monthlyRate;
+            let principalPaid = monthlyPayment - interest;
+
+            balance -= principalPaid;
+
+            const row = `
+<tr>
+<td>${i}</td>
+<td>₱${principalPaid.toFixed(2)}</td>
+<td>₱${interest.toFixed(2)}</td>
+<td>₱${monthlyPayment.toFixed(2)}</td>
+<td>₱${Math.abs(balance).toFixed(2)}</td>
+</tr>
+`;
+
+            tbody.innerHTML += row;
+
+        }
+
+    }
+</script>
 
 <?php if (isset($_SESSION['toast_success'])): ?>
     <div id="toast-trigger" data-message="<?= $_SESSION['toast_success'] ?>" style="display:none;"></div>

@@ -147,7 +147,7 @@ if ($auth->isLoggedIn()) {
     ?>
     <script type="module" src="/acesv2/assets/js/theme.js"></script>
     <script type="module" src="/acesv2/assets/js/app.js"></script>
-    <script type="module" src="/acesv2/assets/js/member_view.js"></script>
+    <script type="module" src="/acesv2/assets/js/member.js"></script>
 </body>
 
 </html>

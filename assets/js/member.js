@@ -101,3 +101,97 @@ export function initBalanceFormatter() {
 
 // Initialize when the DOM is ready
 document.addEventListener('DOMContentLoaded', initBalanceFormatter);
+
+document.addEventListener('input', function (e) {
+
+    if (e.target.matches('.principal-input, .interest-input, .term-input')) {
+
+        const P = parseFloat(document.querySelector('.principal-input').value) || 0;
+        const interestRaw = document.querySelector('.interest-input').value.replace('%', '').trim();
+        const R = (parseFloat(interestRaw) || 0) / 100 / 12;
+        const N = parseInt(document.querySelector('.term-input').value) || 0;
+
+        if (P > 0 && R > 0 && N > 0) {
+
+            const x = Math.pow(1 + R, N);
+            const monthly = (P * x * R) / (x - 1);
+
+            document.querySelector('.amort-display').value = monthly.toFixed(2);
+
+            generateSchedule(P, R, N, monthly);
+
+        }
+
+    }
+
+});
+
+
+function generateSchedule(principal, monthlyRate, months, monthlyPayment) {
+
+    const tbody = document.querySelector('#scheduleTable tbody');
+
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    let balance = principal;
+
+    for (let i = 1; i <= months; i++) {
+
+        let interest = balance * monthlyRate;
+        let principalPaid = monthlyPayment - interest;
+
+        balance -= principalPaid;
+
+        const row = `
+<tr>
+<td>${i}</td>
+<td>₱${principalPaid.toFixed(2)}</td>
+<td>₱${interest.toFixed(2)}</td>
+<td>₱${monthlyPayment.toFixed(2)}</td>
+<td>₱${Math.abs(balance).toFixed(2)}</td>
+</tr>
+`;
+
+        tbody.innerHTML += row;
+
+    }
+
+}
+
+document.addEventListener('change', function (e) {
+
+    if (e.target.matches('.loan-type')) {
+
+        const loanType = e.target.value;
+        const interestInput = document.querySelector('.interest-input');
+
+        if (!interestInput) return;
+
+        let interestValue;
+
+        if (loanType === 'Micro-Finance Loan') {
+            interestValue = 5;
+        } else {
+            interestValue = 2;
+        }
+
+        interestInput.value = interestValue.toFixed(2) + " %";
+
+        /* trigger recalculation */
+        interestInput.dispatchEvent(new Event('input'));
+
+    }
+
+});
+
+document.querySelector('.interest-input')?.addEventListener('blur', function () {
+
+    let val = this.value.replace('%', '').trim();
+
+    if (!isNaN(val) && val !== '') {
+        this.value = parseFloat(val).toFixed(2) + " %";
+    }
+
+});
