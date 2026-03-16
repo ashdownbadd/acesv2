@@ -308,7 +308,7 @@ body {
 
 /* Updated Search Box to have a fixed height for alignment */
 .c-table-card__search {
-    background: var(--raised);
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 8px;
     /* Changed to match button style */
