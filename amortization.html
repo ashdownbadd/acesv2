@@ -10,31 +10,31 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --navy:    #0d1b2a;
-    --navy-2:  #162335;
-    --navy-3:  #1e2f45;
-    --navy-4:  #243751;
-    --gold:    #c9a84c;
-    --gold-lt: #e4c97e;
-    --gold-dk: #9a7a2e;
-    --cream:   #f5f0e8;
-    --text:    #e8e4dc;
-    --text-dim:#8fa4bc;
-    --border:  rgba(201,168,76,0.15);
-    --radius:  10px;
+    --blue:      #1a2680;
+    --blue-lt:   #2d3db0;
+    --blue-dim:  rgba(26,38,128,0.08);
+    --red:       #e8192c;
+    --red-lt:    #ff3347;
+    --red-dim:   rgba(232,25,44,0.08);
+    --bg:        #f4f6fb;
+    --surface:   #ffffff;
+    --surface-2: #eef0f8;
+    --text:      #0e1340;
+    --text-dim:  #7880a8;
+    --border:    rgba(26,38,128,0.12);
+    --radius:    10px;
     --font-serif: 'DM Serif Display', Georgia, serif;
     --font-sans:  'Epilogue', sans-serif;
     --font-mono:  'DM Mono', monospace;
 
-    /* ── Fluid spacing tokens — adjust these two numbers to tune the whole layout ── */
-    --gap:     clamp(8px, 1.5vw, 12px);
-    --pad-h:   clamp(12px, 4vw, 32px);
-    --pad-v:   clamp(24px, 4vw, 40px);
+    --gap:      clamp(8px, 1.5vw, 12px);
+    --pad-h:    clamp(12px, 4vw, 32px);
+    --pad-v:    clamp(24px, 4vw, 40px);
     --pad-card: clamp(10px, 1.8vw, 14px) clamp(12px, 2vw, 16px);
   }
 
   html, body {
-    background: var(--navy);
+    background: var(--bg);
     color: var(--text);
     font-family: var(--font-sans);
     font-size: clamp(13px, 1.4vw, 15px);
@@ -42,7 +42,6 @@
     line-height: 1.6;
   }
 
-  /* ── Page Shell ─── */
   .page {
     max-width: 1100px;
     margin: 0 auto;
@@ -52,7 +51,7 @@
   .page-header {
     margin-bottom: clamp(20px, 4vw, 36px);
     padding-bottom: clamp(14px, 3vw, 24px);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--blue);
   }
 
   .page-eyebrow {
@@ -60,19 +59,18 @@
     font-weight: 700;
     letter-spacing: .1em;
     text-transform: uppercase;
-    color: var(--gold);
+    color: var(--red);
     margin-bottom: 6px;
   }
 
   .page-title {
     font-family: var(--font-serif);
     font-size: clamp(22px, 5vw, 34px);
-    color: var(--cream);
+    color: var(--blue);
     letter-spacing: -.01em;
     line-height: 1.1;
   }
 
-  /* ── Row Labels ─── */
   .section-label {
     font-size: clamp(9px, 1vw, 10px);
     font-weight: 700;
@@ -83,30 +81,23 @@
     padding-left: 2px;
   }
 
-  /* ── Card Grid Rows ─── */
   .row { margin-bottom: var(--gap); }
 
-  /*
-    auto-fit + minmax: each card is at least 140px wide.
-    At ~600px viewport: 2 columns. At ~320px: 1 column. No media query needed.
-  */
   .grid-4 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
     gap: var(--gap);
   }
 
-  /* Figures row — result card spans full width when it wraps alone */
   .grid-5 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
     gap: var(--gap);
   }
 
-  /* ── Cards ─── */
   .card {
-    background: var(--navy-2);
-    border: 1px solid rgba(255,255,255,0.07);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: var(--pad-card);
   }
@@ -120,12 +111,11 @@
     margin-bottom: 8px;
   }
 
-  /* ── Inputs ─── */
   .card select,
   .card input[type=number] {
     width: 100%;
-    background: var(--navy-3);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: 6px;
     padding: clamp(6px, 1vw, 8px) 10px;
     color: var(--text);
@@ -137,7 +127,7 @@
   }
 
   .card select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238fa4bc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237880a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
     padding-right: 28px;
@@ -146,60 +136,43 @@
 
   .card input:focus,
   .card select:focus {
-    border-color: var(--gold-dk);
-    background: var(--navy-4);
+    border-color: var(--blue-lt);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26,38,128,0.08);
   }
 
-  .card input::placeholder { color: rgba(139,164,188,.4); }
+  .card input::placeholder { color: #b0b8d4; }
 
-  /* ── Amortization Result Card ─── */
+  .card select:invalid,
+  .card select option[value=""] { color: #b0b8d4; }
+  .card select option:not([value=""]) { color: var(--text); }
+
   .card--result {
-    background: linear-gradient(135deg, var(--navy-3), var(--navy-4));
-    border-color: var(--border);
+    background: var(--blue);
+    border-color: var(--blue);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: center;
+    gap: 6px;
   }
+
+  .card--result .card__label { color: rgba(255,255,255,0.6); }
 
   .result-value {
     font-family: var(--font-serif);
     font-size: clamp(20px, 4vw, 30px);
-    color: var(--cream);
+    color: #ffffff;
     letter-spacing: -.02em;
     line-height: 1;
   }
 
   .result-sub {
     font-size: clamp(10px, 1.1vw, 11px);
-    color: var(--text-dim);
-    margin-top: 4px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
   }
 
-  .btn-calc {
-    width: 100%;
-    padding: clamp(7px, 1vw, 9px);
-    border-radius: 6px;
-    border: 1px solid rgba(201,168,76,.3);
-    background: rgba(201,168,76,.08);
-    color: var(--gold-lt);
-    font-family: var(--font-sans);
-    font-size: clamp(10px, 1.1vw, 11px);
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all .2s;
-  }
-
-  .btn-calc:hover {
-    background: rgba(201,168,76,.16);
-    border-color: rgba(201,168,76,.5);
-  }
-
-  .btn-calc:active { transform: scale(.98); }
-
-  /* ── Summary Strip ─── */
+  /* Summary Strip */
   .summary-strip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
@@ -211,8 +184,8 @@
   .summary-strip.hidden { opacity: 0; pointer-events: none; }
 
   .stat {
-    background: var(--navy-2);
-    border: 1px solid rgba(255,255,255,.06);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: var(--pad-card);
   }
@@ -229,17 +202,17 @@
   .stat__value {
     font-family: var(--font-mono);
     font-size: clamp(13px, 2.5vw, 18px);
-    color: var(--cream);
+    color: var(--blue);
     font-weight: 500;
     letter-spacing: -.01em;
   }
 
-  .stat--highlight .stat__value { color: var(--gold-lt); }
+  .stat--highlight .stat__value { color: var(--red); }
 
-  /* ── Schedule Table ─── */
+  /* Schedule Table */
   .table-card {
-    background: var(--navy-2);
-    border: 1px solid rgba(255,255,255,.07);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
   }
@@ -249,7 +222,8 @@
     align-items: center;
     justify-content: space-between;
     padding: clamp(10px, 1.5vw, 14px) clamp(12px, 2vw, 18px);
-    border-bottom: 1px solid rgba(255,255,255,.06);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
   }
 
   .table-card__title {
@@ -257,20 +231,19 @@
     font-weight: 700;
     letter-spacing: .07em;
     text-transform: uppercase;
-    color: var(--text-dim);
+    color: var(--blue);
   }
 
   .table-badge {
     font-size: clamp(10px, 1.1vw, 11px);
     color: var(--text-dim);
-    background: var(--navy-3);
-    border: 1px solid rgba(255,255,255,.07);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 20px;
     padding: 2px 10px;
     white-space: nowrap;
   }
 
-  /* Horizontal scroll on narrow screens instead of overflow-hidden breaking layout */
   .tbl-wrap {
     overflow-x: auto;
     overflow-y: auto;
@@ -280,7 +253,7 @@
 
   table {
     width: 100%;
-    min-width: 420px; /* prevents columns squishing below readable size */
+    min-width: 420px;
     border-collapse: collapse;
     font-size: clamp(11px, 1.2vw, 12px);
   }
@@ -293,8 +266,8 @@
     letter-spacing: .08em;
     text-transform: uppercase;
     color: var(--text-dim);
-    background: var(--navy-2);
-    border-bottom: 1px solid rgba(255,255,255,.06);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     white-space: nowrap;
@@ -305,7 +278,7 @@
   tbody td {
     padding: clamp(7px, 1vw, 9px) clamp(10px, 1.5vw, 16px);
     text-align: right;
-    border-bottom: 1px solid rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(26,38,128,0.06);
     color: var(--text);
     font-family: var(--font-mono);
     font-size: clamp(11px, 1.2vw, 12px);
@@ -317,12 +290,12 @@
     text-align: left;
     font-family: var(--font-sans);
     color: var(--text-dim);
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
   }
 
   tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: rgba(255,255,255,.025); }
+  tbody tr:hover td { background: var(--blue-dim); }
 
   .empty-row td {
     text-align: center !important;
@@ -332,7 +305,7 @@
     white-space: normal !important;
   }
 
-  /* ── SOA Pill ─── */
+  /* Pills */
   .pill {
     display: inline-block;
     font-size: 9px;
@@ -346,20 +319,20 @@
     vertical-align: middle;
   }
 
-  .pill--updated { color: #22c55e; border-color: #22c55e40; background: #22c55e15; }
-  .pill--pending  { color: #f59e0b; border-color: #f59e0b40; background: #f59e0b15; }
-  .pill--overdue  { color: #f97316; border-color: #f9731640; background: #f9731615; }
+  .pill--updated { color: #166534; border-color: #bbf7d0; background: #f0fdf4; }
+  .pill--pending  { color: #92400e; border-color: #fde68a; background: #fffbeb; }
+  .pill--overdue  { color: #991b1b; border-color: #fecaca; background: #fef2f2; }
 
-  /* ── Export Button ─── */
+  /* Export Button */
   .btn-export {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: clamp(5px, 1vw, 7px) clamp(10px, 1.5vw, 14px);
     border-radius: 6px;
-    border: 1px solid rgba(201,168,76,.3);
-    background: rgba(201,168,76,.08);
-    color: var(--gold-lt);
+    border: 1px solid var(--blue);
+    background: var(--blue-dim);
+    color: var(--blue);
     font-family: var(--font-sans);
     font-size: clamp(10px, 1.1vw, 11px);
     font-weight: 700;
@@ -371,8 +344,8 @@
   }
 
   .btn-export:hover:not(:disabled) {
-    background: rgba(201,168,76,.16);
-    border-color: rgba(201,168,76,.5);
+    background: var(--blue);
+    color: #fff;
   }
 
   .btn-export:active:not(:disabled) { transform: scale(.98); }
@@ -399,6 +372,7 @@
       <div class="card">
         <div class="card__label">Loan type</div>
         <select id="loan_type">
+          <option value="" disabled selected>— Select —</option>
           <option>Bridge Financing</option>
           <option>Investment Loan</option>
           <option>Pension Loan</option>
@@ -411,6 +385,7 @@
       <div class="card">
         <div class="card__label">Collateral</div>
         <select id="collateral">
+          <option value="" disabled selected>— Select —</option>
           <option>Post-Dated Check</option>
           <option>Real Property</option>
           <option>Chattels / Movable Assets</option>
@@ -419,6 +394,7 @@
       <div class="card">
         <div class="card__label">SOA status</div>
         <select id="soa">
+          <option value="" disabled selected>— Select —</option>
           <option>Updated</option>
           <option>Pending</option>
           <option>Overdue</option>
@@ -427,9 +403,19 @@
       <div class="card">
         <div class="card__label">Amortization type</div>
         <select id="amort_type">
+          <option value="" disabled selected>— Select —</option>
           <option value="straight">Straight-line</option>
           <option value="diminishing">Diminishing balance</option>
           <option value="manual">Manual</option>
+        </select>
+      </div>
+      <div class="card" id="mf_freq_card" style="display:none;">
+        <div class="card__label">Payment frequency</div>
+        <select id="mf_freq">
+          <option value="" disabled selected>— Select —</option>
+          <option value="monthly">Monthly</option>
+          <option value="semi-monthly">Semi-Monthly</option>
+          <option value="weekly">Weekly</option>
         </select>
       </div>
     </div>
@@ -476,16 +462,12 @@
       <div class="stat__value" id="s_total">—</div>
     </div>
     <div class="stat stat--highlight">
-      <div class="stat__label">Effective rate</div>
+      <div class="stat__label" id="s_rate_label">Fixed Principal</div>
       <div class="stat__value" id="s_rate">—</div>
     </div>
     <div class="stat">
-      <div class="stat__label">Term length</div>
+      <div class="stat__label" id="s_months_label">Term length</div>
       <div class="stat__value" id="s_months">—</div>
-    </div>
-    <div class="stat">
-      <div class="stat__label">SOA status</div>
-      <div class="stat__value" id="s_soa">—</div>
     </div>
   </div>
 
@@ -504,9 +486,10 @@
     <div class="tbl-wrap">
       <table>
         <thead>
-          <tr>
-            <th>Month</th>
-            <th>Principal</th>
+          <tr id="table_head_row">
+            <th>Period</th>
+            <th>Opening Balance</th>
+            <th>Amortization</th>
             <th>Interest</th>
             <th>Payment</th>
             <th>Balance</th>
@@ -514,7 +497,7 @@
         </thead>
         <tbody id="sched_body">
           <tr class="empty-row">
-            <td colspan="5">Enter loan details above and click Generate Schedule</td>
+            <td colspan="6">Enter loan details above to generate the schedule</td>
           </tr>
         </tbody>
       </table>
@@ -528,24 +511,38 @@
     return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  const THEAD_NORMAL = `<th>Period</th><th style="text-align:right">Principal</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th>`;
+  const THEAD_MF     = `<th>Period</th><th style="text-align:right">Opening Balance</th><th style="text-align:right">Amortization</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th>`;
+
   function calculate() {
+    const loanType = document.getElementById("loan_type").value;
+    const isMF     = loanType === "Micro-Finance Loan";
+
     const p   = parseFloat(document.getElementById("principal").value);
     const r   = parseFloat(document.getElementById("interest").value) / 100;
     const m   = parseInt(document.getElementById("months").value);
     const t   = document.getElementById("amort_type").value;
     const man = parseFloat(document.getElementById("manual_payment").value) || 0;
-    const soa = document.getElementById("soa").value;
-    const pillClass = soa === "Updated" ? "pill--updated" : soa === "Overdue" ? "pill--overdue" : "pill--pending";
+    const freq = document.getElementById("mf_freq").value;
 
-    document.getElementById("manual_card").style.display = t === "manual" ? "block" : "none";
+    // Show/hide mode-specific cards
+    document.getElementById("amort_type").closest(".card").style.display = isMF ? "none" : "";
+    document.getElementById("mf_freq_card").style.display = isMF ? "block" : "none";
+    document.getElementById("manual_card").style.display  = (!isMF && t === "manual") ? "block" : "none";
 
-    const tbody  = document.getElementById("sched_body");
+    // Update table headers
+    document.getElementById("table_head_row").innerHTML = isMF ? THEAD_MF : THEAD_NORMAL;
+
+    const tbody    = document.getElementById("sched_body");
     const resultEl  = document.getElementById("monthly_display");
     const resultSub = document.getElementById("result_sub");
+    const colSpan   = isMF ? 6 : 5;
 
-    if (!p || !m || (t !== "manual" && !r) || (t === "manual" && !man)) {
+    const invalid = !p || !m || (isMF && !r) || (!isMF && t !== "manual" && !r) || (!isMF && t === "manual" && !man);
+    if (invalid) {
       resultEl.textContent = "₱ —";
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Enter loan details to generate the schedule</td></tr>`;
+      resultSub.textContent = "Updates automatically";
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="${colSpan}">Enter loan details to generate the schedule</td></tr>`;
       document.getElementById("row_count").textContent = "No data";
       document.getElementById("export_btn").disabled = true;
       document.getElementById("summary_strip").classList.add("hidden");
@@ -554,96 +551,126 @@
 
     tbody.innerHTML = "";
 
-    let balance = p, totalInterest = 0, totalPayment = 0;
+    // ── MICROFINANCE MODE ────────────────────────────────────────────
+    if (isMF) {
+      const freqMult      = freq === "monthly" ? 1 : freq === "semi-monthly" ? 2 : 4;
+      const ratePerPeriod = r / freqMult;          // 5%/mo → 2.5% semi-monthly, 1.25% weekly
+      const totalPeriods  = m * freqMult;
+      const amortPerPeriod  = p / totalPeriods;    // fixed principal slice
+      const interestPerPeriod = p * ratePerPeriod; // flat — always on original loan
+      const payment         = amortPerPeriod + interestPerPeriod;
 
-    /*
-     * How each type works:
-     *
-     * straight    — principal is fixed (p/m), interest is always on original principal (p×r)
-     *               → total payment is identical every month
-     *
-     * diminishing — principal is fixed (p/m), interest is on the CURRENT balance (balance×r)
-     *               → total payment decreases every month as balance falls  ← matches the Excel
-     *
-     * manual      — user sets the fixed total payment; principal = payment − interest on balance
-     */
+      const freqLabel = freq === "monthly" ? "month" : freq === "semi-monthly" ? "semi-month" : "week";
 
-    for (let i = 1; i <= m; i++) {
-      let principalPay, interest, payment;
+      resultEl.textContent  = peso(payment);
+      resultSub.textContent = `Fixed per ${freqLabel} · ${totalPeriods} periods`;
 
-      if (t === "straight") {
-        principalPay = p / m;
-        interest     = p * r;              // always on original principal
-        payment      = principalPay + interest;
+      let balance = p, totalInterest = 0, totalPayment = 0;
 
-      } else if (t === "diminishing") {
-        principalPay = p / m;              // FIXED principal slice
-        interest     = balance * r;        // on CURRENT balance → shrinks each month
-        payment      = principalPay + interest;
+      for (let i = 1; i <= totalPeriods; i++) {
+        const openingBalance = balance;
+        balance -= amortPerPeriod;
+        if (balance < 0) balance = 0;
+        totalInterest += interestPerPeriod;
+        totalPayment  += payment;
 
-      } else {
-        // manual
-        payment      = man;
-        interest     = balance * r;
-        principalPay = payment - interest;
-        if (principalPay < 0) principalPay = 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i}</td>
+          <td>${peso(openingBalance)}</td>
+          <td>${peso(amortPerPeriod)}</td>
+          <td>${peso(interestPerPeriod)}</td>
+          <td>${peso(payment)}</td>
+          <td>${peso(balance)}</td>
+        `;
+        tbody.appendChild(tr);
       }
 
-      balance -= principalPay;
-      if (balance < 0) balance = 0;
+      document.getElementById("row_count").textContent = `${totalPeriods} periods`;
+      document.getElementById("s_interest").textContent = peso(totalInterest);
+      document.getElementById("s_total").textContent    = peso(totalPayment);
+      document.getElementById("s_rate").textContent     = peso(amortPerPeriod);
+      document.getElementById("s_months").textContent   = `${m} months`;
+      document.getElementById("s_rate_label").textContent   = "Amortization / period";
+      document.getElementById("s_months_label").textContent = "Term";
 
-      totalInterest += interest;
-      totalPayment  += payment;
+    // ── STANDARD MODES ───────────────────────────────────────────────
+    } else {
+      let balance = p, totalInterest = 0, totalPayment = 0;
 
-      // Show first-month payment in the result card
-      if (i === 1) {
-        resultEl.textContent = peso(payment);
-        resultSub.textContent = t === "diminishing"
-          ? "First month (decreases each period)"
-          : t === "straight"
-          ? "Fixed — same every month"
-          : "Manual payment";
+      for (let i = 1; i <= m; i++) {
+        let principalPay, interest, payment;
+
+        if (t === "straight") {
+          principalPay = p / m;
+          interest     = p * r;
+          payment      = principalPay + interest;
+        } else if (t === "diminishing") {
+          principalPay = p / m;
+          interest     = balance * r;
+          payment      = principalPay + interest;
+        } else {
+          payment      = man;
+          interest     = balance * r;
+          principalPay = payment - interest;
+          if (principalPay < 0) principalPay = 0;
+        }
+
+        balance -= principalPay;
+        if (balance < 0) balance = 0;
+        totalInterest += interest;
+        totalPayment  += payment;
+
+        if (i === 1) {
+          resultEl.textContent  = peso(payment);
+          resultSub.textContent = t === "diminishing"
+            ? "First month (decreases each period)"
+            : t === "straight" ? "Fixed — same every month" : "Manual payment";
+        }
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i}</td>
+          <td>${peso(principalPay)}</td>
+          <td>${peso(interest)}</td>
+          <td>${peso(payment)}</td>
+          <td>${peso(balance)}</td>
+        `;
+        tbody.appendChild(tr);
       }
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${i}</td>
-        <td>${peso(principalPay)}</td>
-        <td>${peso(interest)}</td>
-        <td>${peso(payment)}</td>
-        <td>${peso(balance)}</td>
-      `;
-      tbody.appendChild(tr);
+      document.getElementById("row_count").textContent = `${m} periods`;
+      document.getElementById("s_interest").textContent = peso(totalInterest);
+      document.getElementById("s_total").textContent    = peso(totalPayment);
+      document.getElementById("s_rate").textContent     = peso(p / m);
+      document.getElementById("s_months").textContent   = m + " months";
+      document.getElementById("s_rate_label").textContent   = "Fixed Principal";
+      document.getElementById("s_months_label").textContent = "Term length";
     }
 
-    document.getElementById("row_count").textContent = `${m} periods`;
     document.getElementById("export_btn").disabled = false;
-    document.getElementById("s_interest").textContent = peso(totalInterest);
-    document.getElementById("s_total").textContent = peso(totalPayment);
-    document.getElementById("s_rate").textContent = ((totalInterest / p) * 100).toFixed(2) + "%";
-    document.getElementById("s_months").textContent = m + " months";
-    document.getElementById("s_soa").innerHTML = `<span class="pill ${pillClass}">${soa}</span>`;
     document.getElementById("summary_strip").classList.remove("hidden");
   }
 
   function exportCSV() {
-    const p   = document.getElementById("principal").value;
-    const r   = document.getElementById("interest").value;
-    const m   = document.getElementById("months").value;
-    const t   = document.getElementById("amort_type").value;
+    const p = document.getElementById("principal").value;
+    const r = document.getElementById("interest").value;
+    const m = document.getElementById("months").value;
+    const t = document.getElementById("loan_type").value;
 
-    const rows = [["Month","Principal","Interest","Payment","Balance"]];
+    const headers = [...document.querySelectorAll("#table_head_row th")].map(th => th.innerText.trim());
+    const rows = [headers];
     document.querySelectorAll("#sched_body tr:not(.empty-row)").forEach(tr => {
       const cells = [...tr.querySelectorAll("td")].map(td => td.innerText.replace(/[₱,]/g, "").trim());
       rows.push(cells);
     });
 
-    const csv = rows.map(r => r.join(",")).join("\n");
+    const csv  = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `amortization_${t}_${p}_${r}pct_${m}mo.csv`;
+    a.download = `amortization_${t.replace(/\s+/g,"-")}_${p}_${r}pct_${m}mo.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
