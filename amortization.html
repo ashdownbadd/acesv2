@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loan Amortization Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Epilogue:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:    #0d1b2a;
+    --navy-2:  #162335;
+    --navy-3:  #1e2f45;
+    --navy-4:  #243751;
+    --gold:    #c9a84c;
+    --gold-lt: #e4c97e;
+    --gold-dk: #9a7a2e;
+    --cream:   #f5f0e8;
+    --text:    #e8e4dc;
+    --text-dim:#8fa4bc;
+    --border:  rgba(201,168,76,0.15);
+    --radius:  10px;
+    --font-serif: 'DM Serif Display', Georgia, serif;
+    --font-sans:  'Epilogue', sans-serif;
+    --font-mono:  'DM Mono', monospace;
+  }
+
+  html, body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── Page Shell ─── */
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 32px;
+  }
+
+  .page-header {
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .page-title {
+    font-family: var(--font-serif);
+    font-size: 34px;
+    color: var(--cream);
+    letter-spacing: -.01em;
+    line-height: 1.1;
+  }
+
+  /* ── Row Labels ─── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* ── Card Grid Rows ─── */
+  .row { margin-bottom: 12px; }
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .grid-5 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 1.2fr;
+    gap: 10px;
+  }
+
+  /* ── Cards ─── */
+  .card {
+    background: var(--navy-2);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .card__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  /* ── Inputs ─── */
+  .card select,
+  .card input[type=number] {
+    width: 100%;
+    background: var(--navy-3);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    outline: none;
+    appearance: none;
+    transition: border-color .2s, background .2s;
+  }
+
+  .card select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238fa4bc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+  }
+
+  .card input:focus,
+  .card select:focus {
+    border-color: var(--gold-dk);
+    background: var(--navy-4);
+  }
+
+  .card input::placeholder { color: rgba(139,164,188,.4); }
+
+  /* ── Amortization Result Card ─── */
+  .card--result {
+    background: linear-gradient(135deg, var(--navy-3), var(--navy-4));
+    border-color: var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .result-value {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    color: var(--cream);
+    letter-spacing: -.02em;
+    line-height: 1;
+  }
+
+  .result-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .btn-calc {
+    width: 100%;
+    padding: 9px;
+    border-radius: 6px;
+    border: 1px solid rgba(201,168,76,.3);
+    background: rgba(201,168,76,.08);
+    color: var(--gold-lt);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .btn-calc:hover {
+    background: rgba(201,168,76,.16);
+    border-color: rgba(201,168,76,.5);
+  }
+
+  .btn-calc:active { transform: scale(.98); }
+
+  /* ── Summary Strip ─── */
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+    transition: opacity .3s;
+  }
+
+  .summary-strip.hidden { opacity: 0; pointer-events: none; }
+
+  .stat {
+    background: var(--navy-2);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .stat__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .stat__value {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--cream);
+    font-weight: 500;
+    letter-spacing: -.01em;
+  }
+
+  .stat--highlight .stat__value { color: var(--gold-lt); }
+
+  /* ── Schedule Table ─── */
+  .table-card {
+    background: var(--navy-2);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .table-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+
+  .table-card__title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .table-badge {
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--navy-3);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 20px;
+    padding: 2px 10px;
+  }
+
+  .tbl-wrap {
+    overflow-y: auto;
+    max-height: 320px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th {
+    padding: 9px 16px;
+    text-align: right;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--navy-2);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+
+  thead th:first-child { text-align: left; }
+
+  tbody td {
+    padding: 9px 16px;
+    text-align: right;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody td:first-child {
+    text-align: left;
+    font-family: var(--font-sans);
+    color: var(--text-dim);
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(255,255,255,.025); }
+
+  .empty-row td {
+    text-align: center !important;
+    color: var(--text-dim);
+    font-family: var(--font-sans) !important;
+    padding: 36px 16px !important;
+    font-size: 13px;
+  }
+
+  /* ── SOA Pill ─── */
+  .pill {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 20px;
+    border: 1px solid;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .pill--updated { color: #22c55e; border-color: #22c55e40; background: #22c55e15; }
+  .pill--pending  { color: #f59e0b; border-color: #f59e0b40; background: #f59e0b15; }
+  .pill--overdue  { color: #f97316; border-color: #f9731640; background: #f9731615; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-header">
+    <div class="page-eyebrow">Finance Tools</div>
+    <div class="page-title">Loan Amortization</div>
+  </header>
+
+  <!-- Row 1: Loan Parameters -->
+  <div class="row">
+    <div class="section-label">Loan parameters</div>
+    <div class="grid-4">
+      <div class="card">
+        <div class="card__label">Loan type</div>
+        <select id="loan_type">
+          <option>Bridge Financing</option>
+          <option>Investment Loan</option>
+          <option>Pension Loan</option>
+          <option>Productivity Loan</option>
+          <option>Personal Loan</option>
+          <option>Salary Loan</option>
+          <option>Micro-Finance Loan</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="card__label">Collateral</div>
+        <select id="collateral">
+          <option>Post-Dated Check</option>
+          <option>Real Property</option>
+          <option>Chattels / Movable Assets</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="card__label">SOA status</div>
+        <select id="soa">
+          <option>Updated</option>
+          <option>Pending</option>
+          <option>Overdue</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="card__label">Amortization type</div>
+        <select id="amort_type">
+          <option value="straight">Straight-line</option>
+          <option value="diminishing">Diminishing balance</option>
+          <option value="manual">Manual</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Amounts + Result -->
+  <div class="row">
+    <div class="section-label">Figures</div>
+    <div class="grid-5">
+      <div class="card">
+        <div class="card__label">Principal amount (₱)</div>
+        <input type="number" id="principal" placeholder="0.00">
+      </div>
+      <div class="card">
+        <div class="card__label">Interest rate (%)</div>
+        <input type="number" id="interest" placeholder="0.00">
+      </div>
+      <div class="card">
+        <div class="card__label">Terms (months)</div>
+        <input type="number" id="months" placeholder="0">
+      </div>
+      <div class="card" id="manual_card" style="display:none;">
+        <div class="card__label">Manual monthly payment</div>
+        <input type="number" id="manual_payment" placeholder="0.00">
+      </div>
+      <div class="card card--result">
+        <div>
+          <div class="card__label">Monthly amortization</div>
+          <div class="result-value" id="monthly_display">₱ —</div>
+          <div class="result-sub">Updates automatically</div>
+        </div>
+        <button class="btn-calc" onclick="calculate()">Generate schedule ↻</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Strip (hidden until calculated) -->
+  <div class="summary-strip hidden" id="summary_strip">
+    <div class="stat">
+      <div class="stat__label">Total interest</div>
+      <div class="stat__value" id="s_interest">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat__label">Total payment</div>
+      <div class="stat__value" id="s_total">—</div>
+    </div>
+    <div class="stat stat--highlight">
+      <div class="stat__label">Effective rate</div>
+      <div class="stat__value" id="s_rate">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat__label">Term length</div>
+      <div class="stat__value" id="s_months">—</div>
+    </div>
+  </div>
+
+  <!-- Schedule Table -->
+  <div class="table-card">
+    <div class="table-card__head">
+      <span class="table-card__title">Amortization schedule</span>
+      <span class="table-badge" id="row_count">No data</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Principal</th>
+            <th>Interest</th>
+            <th>Payment</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="sched_body">
+          <tr class="empty-row">
+            <td colspan="5">Enter loan details above and click Generate Schedule</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function peso(n) {
+    return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function getPayment() {
+    const p = parseFloat(document.getElementById("principal").value);
+    const r = parseFloat(document.getElementById("interest").value) / 100;
+    const m = parseInt(document.getElementById("months").value);
+    const t = document.getElementById("amort_type").value;
+    const man = parseFloat(document.getElementById("manual_payment").value) || 0;
+
+    if (t === "manual") return man;
+    if (!p || !r || !m || isNaN(p) || isNaN(r) || isNaN(m)) return 0;
+
+    if (t === "straight") return (p / m) + (p * r);
+    if (t === "diminishing") return p * (r * Math.pow(1 + r, m)) / (Math.pow(1 + r, m) - 1);
+    return 0;
+  }
+
+  function calculate() {
+    const p = parseFloat(document.getElementById("principal").value);
+    const r = parseFloat(document.getElementById("interest").value) / 100;
+    const m = parseInt(document.getElementById("months").value);
+    const t = document.getElementById("amort_type").value;
+    const soa = document.getElementById("soa").value;
+    const pillClass = soa === "Updated" ? "pill--updated" : soa === "Overdue" ? "pill--overdue" : "pill--pending";
+
+    const payment = getPayment();
+    document.getElementById("monthly_display").textContent = payment > 0 ? peso(payment) : "₱ —";
+
+    const tbody = document.getElementById("sched_body");
+
+    if (!p || !m || payment <= 0 || (t !== "manual" && !r)) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Enter loan details to generate the schedule</td></tr>`;
+      document.getElementById("row_count").textContent = "No data";
+      document.getElementById("summary_strip").classList.add("hidden");
+      return;
+    }
+
+    tbody.innerHTML = "";
+
+    let balance = p, totalInterest = 0, totalPayment = 0;
+
+    for (let i = 1; i <= m; i++) {
+      let interest = 0, principalPay = 0;
+
+      if (t === "straight") {
+        interest = p * r;
+        principalPay = p / m;
+      } else {
+        interest = balance * r;
+        principalPay = payment - interest;
+      }
+
+      balance -= principalPay;
+      if (balance < 0) balance = 0;
+
+      totalInterest += interest;
+      totalPayment += payment;
+
+      const soaBadge = i === 1 ? `<span class="pill ${pillClass}">${soa}</span>` : "";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${i}${soaBadge}</td>
+        <td>${peso(principalPay)}</td>
+        <td>${peso(interest)}</td>
+        <td>${peso(payment)}</td>
+        <td>${peso(balance)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    document.getElementById("row_count").textContent = `${m} periods`;
+    document.getElementById("s_interest").textContent = peso(totalInterest);
+    document.getElementById("s_total").textContent = peso(totalPayment);
+    document.getElementById("s_rate").textContent = ((totalInterest / p) * 100).toFixed(2) + "%";
+    document.getElementById("s_months").textContent = m + " months";
+    document.getElementById("summary_strip").classList.remove("hidden");
+  }
+
+  function toggleManual() {
+    const t = document.getElementById("amort_type").value;
+    document.getElementById("manual_card").style.display = t === "manual" ? "block" : "none";
+    calculate();
+  }
+
+  document.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("input", calculate);
+    el.addEventListener("change", calculate);
+  });
+</script>
+
+</body>
+</html>

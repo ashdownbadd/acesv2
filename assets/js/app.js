@@ -10,7 +10,7 @@ window.confirmLogout = confirmLogout;
 document.addEventListener('DOMContentLoaded', () => {
     initDropdowns();
     initThemeToggle();
-    initTableSearch(); // Initialize it here
+    initTableSearch();
     initSettingsForm();
     initImagePreview();
     showSignature();
