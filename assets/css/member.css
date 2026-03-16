@@ -10,10 +10,10 @@
     grid-template-rows: auto auto auto auto;
     gap: 22px;
 
+    /* Removed "loan" from the grid layout */
     grid-template-areas:
         "balance membership membership"
         "personal personal contact"
-        "loan loan loan"
         "remarks remarks action";
 }
 
@@ -42,7 +42,6 @@ input.mv-card__balance {
     outline: none;
 }
 
-/* Optional: Add hover/focus state for better UX */
 input.mv-card__balance:focus {
     color: var(--gold);
 }
@@ -67,10 +66,6 @@ input.mv-card__balance:focus {
 
 .mv-card--remarks {
     grid-area: remarks;
-}
-
-.mv-card--loan {
-    grid-area: loan;
 }
 
 .mv-action-bar {
@@ -166,65 +161,6 @@ textarea.mv-input {
     resize: none;
 }
 
-.mv-schedule-table {
-    margin-top: 10px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: auto;
-    max-height: 250px;
-}
-
-.mv-schedule-table table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: .8rem;
-}
-
-.mv-schedule-table th {
-    background: var(--bg);
-    padding: 8px;
-    text-align: left;
-    position: sticky;
-    top: 0;
-}
-
-.mv-schedule-table td {
-    padding: 8px;
-    border-top: 1px solid var(--border);
-}
-
-.mv-history-table {
-    margin-top: 10px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-#loanHistoryTable {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-    font-family: var(--font-main);
-}
-
-#loanHistoryTable thead {
-    background: var(--bg);
-}
-
-#loanHistoryTable th {
-    font-weight: 700;
-    color: var(--t2);
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-}
-
-#loanHistoryTable td {
-    padding: 12px;
-    border-top: 1px solid var(--border);
-    color: var(--text);
-}
-
 .mv-btn {
     height: 38px;
     padding: 0 24px;
@@ -271,7 +207,6 @@ textarea.mv-input {
             "membership"
             "personal"
             "contact"
-            "loan"
             "remarks"
             "action";
     }
