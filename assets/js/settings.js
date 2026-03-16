@@ -1,28 +1,7 @@
-// /acesv2/assets/js/settings.js
-
-// Simple toast notification helper
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'c-toast';
-    toast.innerText = message;
-    document.body.appendChild(toast);
-
-    // Remove toast after 3 seconds
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-}
-
 export function initSettingsForm() {
     const form = document.getElementById('settings-form');
     const saveBtn = document.getElementById('save-btn');
     if (!form) return;
-
-    // Check for success status in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('status') === 'success') {
-        showToast('Profile updated successfully!');
-    }
 
     const inputs = form.querySelectorAll('input');
     const originalValues = {};
@@ -36,7 +15,7 @@ export function initSettingsForm() {
 
     const checkChanges = () => {
         let hasChanges = false;
-        
+
         inputs.forEach(input => {
             if (input.type !== 'file' && input.value !== originalValues[input.name]) {
                 hasChanges = true;
@@ -70,7 +49,7 @@ export function initSettingsForm() {
         if (!confirm("Are you sure you want to save these changes?")) {
             e.preventDefault();
         } else {
-            isDirty = false; 
+            isDirty = false;
         }
     });
 
