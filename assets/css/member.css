@@ -59,6 +59,12 @@ input.mv-card__balance:focus {
     grid-area: contact;
 }
 
+.mv-card--contact .mv-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+}
+
 .mv-card--remarks {
     grid-area: remarks;
 }

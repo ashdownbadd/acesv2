@@ -17,8 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_member'])) {
     $sql = "UPDATE members SET 
             prefix = ?, first_name = ?, middle_name = ?, last_name = ?, suffix = ?, 
             birthdate = ?, death_date = ?, civil_status = ?, address = ?, 
-            membership_type = ?, status = ?, email = ?, phone_number = ?, 
-            telephone_number = ?, remarks = ?, balance = ? 
+            membership_type = ?, status = ?, email = ?, 
+            phone_number = ?, phone_number_2 = ?, 
+            telephone_number = ?, telephone_number_2 = ?, 
+            remarks = ?, balance = ? 
             WHERE id = ?";
 
     $stmt = $db->prepare($sql);
@@ -37,9 +39,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_member'])) {
         $_POST['status'],
         $_POST['email'],
         $_POST['phone_number'],
+        $_POST['phone_number_2'], // New field
         $_POST['telephone_number'],
+        $_POST['telephone_number_2'], // New field
         $_POST['remarks'],
-        $cleanBalance, // Use the sanitized variable here
+        $cleanBalance,
         $targetId
     ])) {
 
@@ -160,13 +164,23 @@ if (!$m) {
                             <label class="mv-label">Email Address</label>
                             <input class="mv-input" name="email" value="<?= htmlspecialchars($m['email']) ?>">
                         </div>
+
                         <div class="mv-field">
-                            <label class="mv-label">Mobile</label>
+                            <label class="mv-label">Mobile 1</label>
                             <input class="mv-input" name="phone_number" value="<?= htmlspecialchars($m['phone_number']) ?>">
                         </div>
                         <div class="mv-field">
-                            <label class="mv-label">Telephone</label>
+                            <label class="mv-label">Mobile 2</label>
+                            <input class="mv-input" name="phone_number_2" value="<?= htmlspecialchars($m['phone_number_2'] ?? '') ?>">
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">Telephone 1</label>
                             <input class="mv-input" name="telephone_number" value="<?= htmlspecialchars($m['telephone_number']) ?>">
+                        </div>
+                        <div class="mv-field">
+                            <label class="mv-label">Telephone 2</label>
+                            <input class="mv-input" name="telephone_number_2" value="<?= htmlspecialchars($m['telephone_number_2'] ?? '') ?>">
                         </div>
                     </div>
                 </section>
