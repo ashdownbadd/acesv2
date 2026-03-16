@@ -134,7 +134,7 @@ input.mv-card__balance:focus {
     box-sizing: border-box;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 50px;
+    border-radius: 6px;
     height: 38px;
     padding: 8px 16px;
     font-size: .85rem;
