@@ -50,11 +50,12 @@ if (!$m) {
 
                 <section class="mv-card mv-card--membership">
                     <header class="mv-card__title">Membership Details</header>
-                    <div class="mv-form">
+                    <div class="mv-form" style="grid-template-columns: repeat(4, 1fr);">
                         <div class="mv-field">
                             <label class="mv-label">Member ID</label>
-                            <input class="mv-input" value="<?= htmlspecialchars($m['member_id']) ?>" readonly>
+                            <input class="mv-input" name="member_id" value="<?= htmlspecialchars($m['member_id']) ?>" readonly>
                         </div>
+
                         <div class="mv-field">
                             <label class="mv-label">Type</label>
                             <select class="mv-input" name="membership_type">
@@ -63,6 +64,7 @@ if (!$m) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
+
                         <div class="mv-field">
                             <label class="mv-label">Status</label>
                             <select class="mv-input" name="status">
@@ -70,6 +72,14 @@ if (!$m) {
                                     <option value="<?= $opt ?>" <?= $m['status'] == $opt ? 'selected' : '' ?>><?= $opt ?></option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">MGS</label>
+                            <label class="mgs-switch">
+                                <input type="checkbox" name="is_mgs" value="1" <?= ($m['is_mgs'] ?? 0) ? 'checked' : '' ?>>
+                                <span class="mgs-slider"></span>
+                            </label>
                         </div>
                     </div>
                 </section>
