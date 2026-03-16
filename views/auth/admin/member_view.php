@@ -179,9 +179,14 @@ if (!$m) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php if (!empty($loanHistory)): foreach ($loanHistory as $loan): ?>
+                                        <?php
+                                        if (!empty($loanHistory)):
+                                            $counter = 1;
+                                            foreach ($loanHistory as $loan):
+                                        ?>
                                                 <tr>
-                                                    <td><?= $loan['id'] ?></td>
+                                                    <td><?= $counter++ ?></td>
+
                                                     <td><?= htmlspecialchars($loan['loan_type']) ?></td>
                                                     <td><?= number_format($loan['principal'], 2) ?></td>
                                                     <td><?= htmlspecialchars($loan['interest_rate']) ?>%</td>
@@ -190,8 +195,10 @@ if (!$m) {
                                                     <td><?= htmlspecialchars($loan['soa_status']) ?></td>
                                                     <td><?= date('Y-m-d', strtotime($loan['date_released'])) ?></td>
                                                 </tr>
-                                            <?php endforeach;
-                                        else: ?>
+                                            <?php
+                                            endforeach;
+                                        else:
+                                            ?>
                                             <tr>
                                                 <td colspan="8" style="text-align:center;">No loan history available</td>
                                             </tr>
