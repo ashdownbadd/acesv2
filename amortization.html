@@ -48,29 +48,6 @@
     padding: var(--pad-v) var(--pad-h);
   }
 
-  .page-header {
-    margin-bottom: clamp(20px, 4vw, 36px);
-    padding-bottom: clamp(14px, 3vw, 24px);
-    border-bottom: 2px solid var(--blue);
-  }
-
-  .page-eyebrow {
-    font-size: clamp(9px, 1vw, 11px);
-    font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--red);
-    margin-bottom: 6px;
-  }
-
-  .page-title {
-    font-family: var(--font-serif);
-    font-size: clamp(22px, 5vw, 34px);
-    color: var(--blue);
-    letter-spacing: -.01em;
-    line-height: 1.1;
-  }
-
   .section-label {
     font-size: clamp(9px, 1vw, 10px);
     font-weight: 700;
@@ -354,18 +331,125 @@
     opacity: .35;
     cursor: not-allowed;
   }
+
+  .btn-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: clamp(5px, 1vw, 7px) clamp(10px, 1.5vw, 14px);
+    border-radius: 6px;
+    border: none;
+    background: var(--blue);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: clamp(10px, 1.1vw, 11px);
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+
+  .btn-save:hover { background: var(--blue-lt); }
+  .btn-save:active { transform: scale(.98); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--blue);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(26,38,128,0.25);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .3s;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Computed Cards ─── */
+  .card--computed {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+
+  .card__note {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #b0b8d4;
+    margin-left: 2px;
+  }
+
+  .computed-value {
+    font-family: var(--font-mono);
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: 500;
+    color: var(--blue);
+    letter-spacing: -.01em;
+  }
+
+  .card--net {
+    background: var(--blue);
+    border-color: var(--blue);
+  }
+
+  .card--net .card__label,
+  .card--net .card__note { color: rgba(255,255,255,0.6); }
+
+  .card--net .computed-value { color: #fff; }
+
+  /* ── Row status highlights ─── */
+  tbody tr.row--overdue td  { background: #fef2f2; }
+  tbody tr.row--overdue td  { color: #991b1b; }
+  tbody tr.row--near-due td { background: #fffbeb; }
+  tbody tr.row--paid td     { background: #f0fdf4; color: #6b7280; }
+
+  tbody tr.row--overdue:hover td  { background: #fee2e2; }
+  tbody tr.row--near-due:hover td { background: #fef3c7; }
+  tbody tr.row--paid:hover td     { background: #dcfce7; }
+
+  /* ── Status select inside table ─── */
+  .status-select {
+    appearance: none;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 22px 2px 8px;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    outline: none;
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23888' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    transition: all .15s;
+  }
+
+  .status-select.s-pending  { background-color: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .status-select.s-paid     { background-color: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+  .status-select.s-overdue  { background-color: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+  /* Due date cell */
+  td.due-date { font-family: var(--font-sans); font-size: 11px; color: var(--text-dim); }
+  td.due-near { color: #92400e; font-weight: 600; }
+  td.due-over { color: #991b1b; font-weight: 600; }
 </style>
 </head>
 <body>
 
 <div class="page">
 
-  <header class="page-header">
-    <div class="page-eyebrow">Finance Tools</div>
-    <div class="page-title">Loan Amortization</div>
-  </header>
-
-  <!-- Row 1: Loan Parameters -->
+<!-- Row 1: Loan Parameters -->
   <div class="row">
     <div class="section-label">Loan parameters</div>
     <div class="grid-4">
@@ -414,7 +498,7 @@
         <select id="mf_freq">
           <option value="" disabled selected>— Select —</option>
           <option value="monthly">Monthly</option>
-          <option value="semi-monthly">Semi-Monthly</option>
+          <option value="bi-monthly">Bi-Monthly</option>
           <option value="weekly">Weekly</option>
         </select>
       </div>
@@ -437,6 +521,10 @@
         <div class="card__label">Terms (months)</div>
         <input type="number" id="months" placeholder="0">
       </div>
+      <div class="card">
+        <div class="card__label">Start date</div>
+        <input type="date" id="start_date">
+      </div>
       <div class="card" id="manual_card" style="display:none;">
         <div class="card__label">Manual monthly payment</div>
         <input type="number" id="manual_payment" placeholder="0.00">
@@ -447,6 +535,29 @@
           <div class="result-value" id="monthly_display">₱ —</div>
           <div class="result-sub" id="result_sub">Updates automatically</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Computed Loan Details -->
+  <div class="row" id="loan_details_row" style="display:none;">
+    <div class="section-label">Loan deductions &amp; net proceeds</div>
+    <div class="grid-4">
+      <div class="card card--computed">
+        <div class="card__label">Processing Fee <span class="card__note">(2% of principal)</span></div>
+        <div class="computed-value" id="c_processing">₱ —</div>
+      </div>
+      <div class="card card--computed">
+        <div class="card__label">Insurance <span class="card__note">(principal ÷ 1000 × 1.2 × terms)</span></div>
+        <div class="computed-value" id="c_insurance">₱ —</div>
+      </div>
+      <div class="card card--computed">
+        <div class="card__label">Notarial Fee <span class="card__note">(fixed)</span></div>
+        <div class="computed-value" id="c_notarial">₱400.00</div>
+      </div>
+      <div class="card card--computed card--net">
+        <div class="card__label">Net Proceeds</div>
+        <div class="computed-value" id="c_net">₱ —</div>
       </div>
     </div>
   </div>
@@ -481,6 +592,10 @@
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><rect x="2" y="11" width="12" height="3" rx="1"/></svg>
           Export CSV
         </button>
+        <button class="btn-save" id="save_btn" onclick="saveData()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H5L2 5v9a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1z"/><path d="M10 2v4H5V2"/><path d="M4 9h8"/></svg>
+          Save
+        </button>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -506,74 +621,192 @@
 
 </div>
 
+<div class="toast" id="toast">Changes saved</div>
+
 <script>
   function peso(n) {
     return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  const THEAD_NORMAL = `<th>Period</th><th style="text-align:right">Principal</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th>`;
-  const THEAD_MF     = `<th>Period</th><th style="text-align:right">Opening Balance</th><th style="text-align:right">Amortization</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th>`;
+  function fmtDate(d) {
+    return d.toLocaleDateString("en-PH", { year:"numeric", month:"short", day:"numeric" });
+  }
+
+  // Advance a date by one period depending on frequency
+  function nextDate(d, freq) {
+    const nd = new Date(d);
+    if      (freq === "monthly")    nd.setMonth(nd.getMonth() + 1);
+    else if (freq === "bi-monthly") nd.setDate(nd.getDate() + 15);
+    else if (freq === "weekly")     nd.setDate(nd.getDate() + 7);
+    else                            nd.setMonth(nd.getMonth() + 1);
+    return nd;
+  }
+
+  // Returns: "overdue" | "near-due" | "pending" | ""
+  function dueness(dueDate) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const due   = new Date(dueDate); due.setHours(0,0,0,0);
+    const diff  = Math.ceil((due - today) / 86400000);
+    if (diff < 0)  return "overdue";
+    if (diff <= 3) return "near-due";
+    return "pending";
+  }
+
+  // row statuses keyed by period index — persists across redraws until recalc
+  let rowStatuses = {};
+
+  const THEAD_NORMAL = `<th>Period</th><th style="text-align:right">Principal</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th><th>Due Date</th><th>Status</th>`;
+  const THEAD_MF     = `<th>Period</th><th style="text-align:right">Opening Balance</th><th style="text-align:right">Amortization</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th><th>Due Date</th><th>Status</th>`;
+
+  function buildStatusSelect(idx, status) {
+    const opts = ["pending","paid","overdue"];
+    const labels = { pending:"Pending", paid:"Paid", overdue:"Overdue" };
+    let html = `<select class="status-select s-${status}" data-idx="${idx}" onchange="onStatusChange(this)">`;
+    opts.forEach(o => {
+      html += `<option value="${o}"${o===status?" selected":""}>${labels[o]}</option>`;
+    });
+    html += `</select>`;
+    return html;
+  }
+
+  function onStatusChange(sel) {
+    const idx    = sel.dataset.idx;
+    const status = sel.value;
+    rowStatuses[idx] = status;
+
+    // Update select appearance
+    sel.className = `status-select s-${status}`;
+
+    // Update row highlight
+    const tr = sel.closest("tr");
+    tr.className = status === "overdue" ? "row--overdue"
+                 : status === "paid"    ? "row--paid"
+                 : tr.dataset.dueness === "near-due" ? "row--near-due" : "";
+
+    // Update due date cell colour
+    const dueTd = tr.querySelector(".due-date");
+    if (dueTd) {
+      dueTd.className = "due-date";
+      if (status !== "paid") {
+        if (tr.dataset.dueness === "overdue" || status === "overdue") dueTd.classList.add("due-over");
+        else if (tr.dataset.dueness === "near-due") dueTd.classList.add("due-near");
+      }
+    }
+  }
+
+  function applyRowState(tr, idx, dueDate, statusOverride) {
+    const d  = dueness(dueDate);
+    const st = statusOverride || rowStatuses[idx] || (d === "overdue" ? "overdue" : "pending");
+    rowStatuses[idx] = st;
+    tr.dataset.dueness = d;
+    tr.className = st === "overdue" ? "row--overdue"
+                 : st === "paid"    ? "row--paid"
+                 : d  === "near-due"? "row--near-due" : "";
+    return st;
+  }
 
   function calculate() {
     const loanType = document.getElementById("loan_type").value;
     const isMF     = loanType === "Micro-Finance Loan";
 
-    const p   = parseFloat(document.getElementById("principal").value);
-    const r   = parseFloat(document.getElementById("interest").value) / 100;
-    const m   = parseInt(document.getElementById("months").value);
-    const t   = document.getElementById("amort_type").value;
-    const man = parseFloat(document.getElementById("manual_payment").value) || 0;
-    const freq = document.getElementById("mf_freq").value;
+    // Auto interest rate
+    const interestInput = document.getElementById("interest");
+    if (loanType && !interestInput.dataset.userEdited) {
+      interestInput.value = isMF ? 5 : 2;
+    }
 
-    // Show/hide mode-specific cards
+    const p          = parseFloat(document.getElementById("principal").value);
+    const r          = parseFloat(interestInput.value) / 100;
+    const m          = parseInt(document.getElementById("months").value);
+    const t          = document.getElementById("amort_type").value;
+    const man        = parseFloat(document.getElementById("manual_payment").value) || 0;
+    const freq       = document.getElementById("mf_freq").value;
+    const startRaw   = document.getElementById("start_date").value;
+    const hasDate    = !!startRaw;
+    const startDate  = hasDate ? new Date(startRaw) : null;
+
+    // Show/hide cards
     document.getElementById("amort_type").closest(".card").style.display = isMF ? "none" : "";
     document.getElementById("mf_freq_card").style.display = isMF ? "block" : "none";
     document.getElementById("manual_card").style.display  = (!isMF && t === "manual") ? "block" : "none";
 
-    // Update table headers
+    // Computed deductions
+    const detailsRow = document.getElementById("loan_details_row");
+    if (p && m) {
+      const processingFee = p * 0.02;
+      const insurance     = (p / 1000) * 1.2 * m;
+      const notarial      = 400;
+      const netProceeds   = p - processingFee - insurance - notarial;
+      document.getElementById("c_processing").textContent = peso(processingFee);
+      document.getElementById("c_insurance").textContent  = peso(insurance);
+      document.getElementById("c_notarial").textContent   = peso(notarial);
+      document.getElementById("c_net").textContent        = peso(netProceeds);
+      detailsRow.style.display = "block";
+    } else {
+      detailsRow.style.display = "none";
+    }
+
+    // Table headers
     document.getElementById("table_head_row").innerHTML = isMF ? THEAD_MF : THEAD_NORMAL;
 
-    const tbody    = document.getElementById("sched_body");
+    const tbody     = document.getElementById("sched_body");
     const resultEl  = document.getElementById("monthly_display");
     const resultSub = document.getElementById("result_sub");
-    const colSpan   = isMF ? 6 : 5;
+    const colSpan   = isMF ? 8 : 7;
 
     const invalid = !p || !m || (isMF && !r) || (!isMF && t !== "manual" && !r) || (!isMF && t === "manual" && !man);
     if (invalid) {
-      resultEl.textContent = "₱ —";
+      resultEl.textContent  = "₱ —";
       resultSub.textContent = "Updates automatically";
       tbody.innerHTML = `<tr class="empty-row"><td colspan="${colSpan}">Enter loan details to generate the schedule</td></tr>`;
       document.getElementById("row_count").textContent = "No data";
       document.getElementById("export_btn").disabled = true;
       document.getElementById("summary_strip").classList.add("hidden");
+      rowStatuses = {};
       return;
     }
 
+    // Preserve existing statuses but reset if it's a fresh calc (no statuses yet)
+    const prevStatuses = {...rowStatuses};
+    rowStatuses = {};
+
     tbody.innerHTML = "";
 
-    // ── MICROFINANCE MODE ────────────────────────────────────────────
-    if (isMF) {
-      const freqMult      = freq === "monthly" ? 1 : freq === "semi-monthly" ? 2 : 4;
-      const ratePerPeriod = r / freqMult;          // 5%/mo → 2.5% semi-monthly, 1.25% weekly
-      const totalPeriods  = m * freqMult;
-      const amortPerPeriod  = p / totalPeriods;    // fixed principal slice
-      const interestPerPeriod = p * ratePerPeriod; // flat — always on original loan
-      const payment         = amortPerPeriod + interestPerPeriod;
+    // ── Date cell helper ──────────────────────────────────────────────
+    function dateCells(dueDate, idx, st) {
+      if (!hasDate) return `<td class="due-date">—</td><td>${buildStatusSelect(idx, st)}</td>`;
+      const d = dueness(dueDate);
+      const dateClass = st !== "paid"
+        ? (d === "overdue" || st === "overdue" ? "due-date due-over" : d === "near-due" ? "due-date due-near" : "due-date")
+        : "due-date";
+      return `<td class="${dateClass}">${fmtDate(dueDate)}</td><td>${buildStatusSelect(idx, st)}</td>`;
+    }
 
-      const freqLabel = freq === "monthly" ? "month" : freq === "semi-monthly" ? "semi-month" : "week";
+    // ── MICROFINANCE MODE ─────────────────────────────────────────────
+    if (isMF) {
+      const freqMult          = freq === "monthly" ? 1 : freq === "bi-monthly" ? 2 : 4;
+      const ratePerPeriod     = r / freqMult;
+      const totalPeriods      = m * freqMult;
+      const amortPerPeriod    = p / totalPeriods;
+      const interestPerPeriod = p * ratePerPeriod;
+      const payment           = amortPerPeriod + interestPerPeriod;
+      const freqLabel         = freq === "monthly" ? "month" : freq === "bi-monthly" ? "bi-month" : "week";
 
       resultEl.textContent  = peso(payment);
       resultSub.textContent = `Fixed per ${freqLabel} · ${totalPeriods} periods`;
 
       let balance = p, totalInterest = 0, totalPayment = 0;
+      let dueDate = startDate ? new Date(startDate) : null;
 
       for (let i = 1; i <= totalPeriods; i++) {
+        if (dueDate) dueDate = nextDate(dueDate, freq);
         const openingBalance = balance;
         balance -= amortPerPeriod;
         if (balance < 0) balance = 0;
         totalInterest += interestPerPeriod;
         totalPayment  += payment;
 
+        const st = prevStatuses[i] || (dueDate ? (dueness(dueDate) === "overdue" ? "overdue" : "pending") : "pending");
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${i}</td>
@@ -582,37 +815,35 @@
           <td>${peso(interestPerPeriod)}</td>
           <td>${peso(payment)}</td>
           <td>${peso(balance)}</td>
+          ${dateCells(dueDate, i, st)}
         `;
         tbody.appendChild(tr);
+        applyRowState(tr, i, dueDate || new Date(0), st);
       }
 
-      document.getElementById("row_count").textContent = `${totalPeriods} periods`;
-      document.getElementById("s_interest").textContent = peso(totalInterest);
-      document.getElementById("s_total").textContent    = peso(totalPayment);
-      document.getElementById("s_rate").textContent     = peso(amortPerPeriod);
-      document.getElementById("s_months").textContent   = `${m} months`;
-      document.getElementById("s_rate_label").textContent   = "Amortization / period";
-      document.getElementById("s_months_label").textContent = "Term";
+      document.getElementById("row_count").textContent          = `${totalPeriods} periods`;
+      document.getElementById("s_interest").textContent         = peso(totalInterest);
+      document.getElementById("s_total").textContent            = peso(totalPayment);
+      document.getElementById("s_rate").textContent             = peso(amortPerPeriod);
+      document.getElementById("s_months").textContent           = `${m} months`;
+      document.getElementById("s_rate_label").textContent       = "Amortization / period";
+      document.getElementById("s_months_label").textContent     = "Term";
 
-    // ── STANDARD MODES ───────────────────────────────────────────────
+    // ── STANDARD MODES ────────────────────────────────────────────────
     } else {
       let balance = p, totalInterest = 0, totalPayment = 0;
+      let dueDate = startDate ? new Date(startDate) : null;
 
       for (let i = 1; i <= m; i++) {
+        if (dueDate) dueDate = nextDate(dueDate, "monthly");
         let principalPay, interest, payment;
 
         if (t === "straight") {
-          principalPay = p / m;
-          interest     = p * r;
-          payment      = principalPay + interest;
+          principalPay = p / m; interest = p * r; payment = principalPay + interest;
         } else if (t === "diminishing") {
-          principalPay = p / m;
-          interest     = balance * r;
-          payment      = principalPay + interest;
+          principalPay = p / m; interest = balance * r; payment = principalPay + interest;
         } else {
-          payment      = man;
-          interest     = balance * r;
-          principalPay = payment - interest;
+          payment = man; interest = balance * r; principalPay = payment - interest;
           if (principalPay < 0) principalPay = 0;
         }
 
@@ -628,6 +859,7 @@
             : t === "straight" ? "Fixed — same every month" : "Manual payment";
         }
 
+        const st = prevStatuses[i] || (dueDate ? (dueness(dueDate) === "overdue" ? "overdue" : "pending") : "pending");
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${i}</td>
@@ -635,15 +867,17 @@
           <td>${peso(interest)}</td>
           <td>${peso(payment)}</td>
           <td>${peso(balance)}</td>
+          ${dateCells(dueDate, i, st)}
         `;
         tbody.appendChild(tr);
+        applyRowState(tr, i, dueDate || new Date(0), st);
       }
 
-      document.getElementById("row_count").textContent = `${m} periods`;
-      document.getElementById("s_interest").textContent = peso(totalInterest);
-      document.getElementById("s_total").textContent    = peso(totalPayment);
-      document.getElementById("s_rate").textContent     = peso(p / m);
-      document.getElementById("s_months").textContent   = m + " months";
+      document.getElementById("row_count").textContent      = `${m} periods`;
+      document.getElementById("s_interest").textContent     = peso(totalInterest);
+      document.getElementById("s_total").textContent        = peso(totalPayment);
+      document.getElementById("s_rate").textContent         = peso(p / m);
+      document.getElementById("s_months").textContent       = m + " months";
       document.getElementById("s_rate_label").textContent   = "Fixed Principal";
       document.getElementById("s_months_label").textContent = "Term length";
     }
@@ -661,7 +895,10 @@
     const headers = [...document.querySelectorAll("#table_head_row th")].map(th => th.innerText.trim());
     const rows = [headers];
     document.querySelectorAll("#sched_body tr:not(.empty-row)").forEach(tr => {
-      const cells = [...tr.querySelectorAll("td")].map(td => td.innerText.replace(/[₱,]/g, "").trim());
+      const cells = [...tr.querySelectorAll("td")].map(td => {
+        const sel = td.querySelector("select");
+        return sel ? sel.value : td.innerText.replace(/[₱,]/g, "").trim();
+      });
       rows.push(cells);
     });
 
@@ -675,10 +912,50 @@
     URL.revokeObjectURL(url);
   }
 
+  function saveData() {
+    const fields = ["loan_type","collateral","soa","amort_type","mf_freq","principal","interest","months","start_date","manual_payment"];
+    const data = {};
+    fields.forEach(id => { data[id] = document.getElementById(id)?.value || ""; });
+
+    // Save row statuses
+    data.rowStatuses = rowStatuses;
+
+    localStorage.setItem("loanCalcSave", JSON.stringify(data));
+
+    const toast = document.getElementById("toast");
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2000);
+  }
+
+  function loadData() {
+    const raw = localStorage.getItem("loanCalcSave");
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      const fields = ["loan_type","collateral","soa","amort_type","mf_freq","principal","interest","months","start_date","manual_payment"];
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && data[id] !== undefined) el.value = data[id];
+      });
+      if (data.rowStatuses) rowStatuses = data.rowStatuses;
+      calculate();
+    } catch(e) {}
+  }
+
   document.querySelectorAll("input, select").forEach(el => {
     el.addEventListener("input", calculate);
     el.addEventListener("change", calculate);
   });
+
+  document.getElementById("interest").addEventListener("input", function() {
+    this.dataset.userEdited = "true";
+  });
+
+  document.getElementById("loan_type").addEventListener("change", function() {
+    document.getElementById("interest").dataset.userEdited = "";
+  });
+
+  loadData();
 </script>
 
 </body>

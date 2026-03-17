@@ -50,7 +50,7 @@ if (!$m) {
 
                 <section class="mv-card mv-card--membership">
                     <header class="mv-card__title">Membership Details</header>
-                    <div class="mv-form" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="mv-form" style="grid-template-columns: repeat(3, 1fr);">
                         <div class="mv-field">
                             <label class="mv-label">Member ID</label>
                             <input class="mv-input" name="member_id" value="<?= htmlspecialchars($m['member_id']) ?>" readonly>
@@ -66,6 +66,14 @@ if (!$m) {
                         </div>
 
                         <div class="mv-field">
+                            <label class="mv-label">Date Joined</label>
+                            <input type="date"
+                                class="mv-input"
+                                name="approval_date"
+                                value="<?= !empty($m['approval_date']) ? date('Y-m-d', strtotime($m['approval_date'])) : '' ?>">
+                        </div>
+
+                        <div class="mv-field">
                             <label class="mv-label">Status</label>
                             <select class="mv-input" name="status">
                                 <?php foreach (['Active', 'Deceased', 'Delisted', 'On-Hold', 'Overdue', 'Under Litigation'] as $opt): ?>
@@ -75,11 +83,21 @@ if (!$m) {
                         </div>
 
                         <div class="mv-field">
-                            <label class="mv-label">MGS</label>
-                            <label class="mgs-switch">
-                                <input type="checkbox" name="is_mgs" value="1" <?= ($m['is_mgs'] ?? 0) ? 'checked' : '' ?>>
-                                <span class="mgs-slider"></span>
-                            </label>
+                            <label class="mv-label">MGS Status</label>
+                            <div style="display: flex; align-items: center; gap: 12px; height: 38px;">
+                                <label class="mgs-switch">
+                                    <input type="checkbox" name="is_mgs" value="1" <?= ($m['is_mgs'] ?? 0) ? 'checked' : '' ?>>
+                                    <span class="mgs-slider"></span>
+                                </label>
+                                <span class="mv-label" style="text-transform: none; color: var(--t2); letter-spacing: normal;">
+                                    <?= ($m['is_mgs'] ?? 0) ? 'Good Standing' : 'Not in GS' ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mv-field">
+                            <label class="mv-label">Last Updated</label>
+                            <input class="mv-input" value="<?= !empty($m['updated_at']) ? date('M d, Y', strtotime($m['updated_at'])) : 'New Record' ?>" readonly title="Automatically tracked by system">
                         </div>
                     </div>
                 </section>

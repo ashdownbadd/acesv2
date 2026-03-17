@@ -138,14 +138,23 @@ input.mv-card__balance:focus {
     outline: none;
 }
 
-/* MGS Toggle Switch Styles */
 .mgs-switch {
     position: relative;
     display: inline-block;
-    width: 50px;
-    height: 24px;
-    margin-top: 7px;
-    /* Align with input height */
+    width: 46px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.mv-card--membership .mv-form {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px 24px; /* Increased horizontal gap to breathe */
+}
+
+/* Optional: Make the MGS text label look like a subtle status indicator */
+.mv-field span.mv-label {
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
 .mgs-switch input {
