@@ -735,39 +735,43 @@
       </div>
     </div>
 
-    <!-- Overdue Summary Panel -->
+    <!-- Payment Summary Panel -->
     <div id="overdue_panel" style="display:none;margin-bottom:var(--gap)">
-      <div class="section-label">Overdue summary — application of payment</div>
+      <div class="section-label">Payment summary — application of payment</div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
         <div
-          style="padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(217,61,61,0.05);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div style="display:flex;gap:24px;flex-wrap:wrap">
+          style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--raised);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
             <div>
               <div
-                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);font-family:var(--font-heading);margin-bottom:3px">
-                Total Penalty</div>
-              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--danger)"
-                id="od_total_penalty">₱0.00</div>
-            </div>
-            <div>
-              <div
-                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--status-overdue);font-family:var(--font-heading);margin-bottom:3px">
-                Total Interest</div>
-              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--status-overdue)"
-                id="od_total_interest">₱0.00</div>
-            </div>
-            <div>
-              <div
-                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);font-family:var(--font-heading);margin-bottom:3px">
+                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--font-heading);margin-bottom:3px">
                 Total Principal</div>
               <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)"
                 id="od_total_principal">₱0.00</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px" id="od_principal_sub"></div>
+            </div>
+            <div>
+              <div
+                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--font-heading);margin-bottom:3px">
+                Total Interest</div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)"
+                id="od_total_interest">₱0.00</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px" id="od_interest_sub"></div>
+            </div>
+            <div id="od_penalty_wrap">
+              <div
+                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);font-family:var(--font-heading);margin-bottom:3px">
+                Total Penalty <span id="od_overdue_badge"
+                  style="font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(217,61,61,0.1);color:var(--danger);border:1px solid rgba(217,61,61,0.2);margin-left:4px;vertical-align:middle"></span>
+              </div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--danger)"
+                id="od_total_penalty">₱0.00</div>
             </div>
             <div style="border-left:1px solid var(--border);padding-left:24px">
               <div
                 style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);font-family:var(--font-heading);margin-bottom:3px">
                 Grand Total Due</div>
-              <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text)"
+              <div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text)"
                 id="od_grand_total">₱0.00</div>
             </div>
           </div>
@@ -779,7 +783,7 @@
           </div>
         </div>
         <div id="od_breakdown" style="padding:12px 18px;font-size:12px;color:var(--t3);font-family:var(--font-main)">
-          Enter an amount above to see how it will be applied across overdue periods.</div>
+          Enter an amount above to see how it will be applied.</div>
       </div>
     </div>
 
@@ -1021,49 +1025,54 @@
       renderLedger();
     }
 
-    // ── Update the overdue summary panel after any recalc ────────────────
+    // ── Update payment summary panel ─────────────────────────────────────
     function updateOverduePanel() {
-      const rows = [...document.querySelectorAll("#sched_body tr:not(.empty-row)")];
-      const overdueRows = rows.filter(tr => {
-        const sel = tr.querySelector(".status-select");
-        return sel && sel.value === "overdue";
-      });
-
       const panel = document.getElementById("overdue_panel");
-      if (overdueRows.length === 0) {
-        panel.style.display = "none";
-        return;
-      }
+      const allRows = [...document.querySelectorAll("#sched_body tr:not(.empty-row)")];
+      if (allRows.length === 0) { panel.style.display = "none"; return; }
 
       panel.style.display = "block";
 
-      let totalPenalty = 0, totalInterest = 0, totalPrincipal = 0;
-      overdueRows.forEach(tr => {
-        const pp = parseFloat(tr.dataset.principal) || 0;
-        const int = parseFloat(tr.dataset.interest) || 0;
-        const due = tr.dataset.duedate ? new Date(tr.dataset.duedate) : null;
-        totalPenalty += calcPenalty(pp, int, due);
-        totalInterest += int;
-        totalPrincipal += pp;
+      let totalPrincipal = 0, totalInterest = 0, totalPenalty = 0, overdueCount = 0;
+
+      allRows.forEach(tr => {
+        const sel = tr.querySelector(".status-select");
+        if (!sel || sel.value === "paid") return;
+
+        totalPrincipal += parseFloat(tr.dataset.remPrincipal) || 0;
+        totalInterest += parseFloat(tr.dataset.remInterest) || 0;
+        totalPenalty += parseFloat(tr.dataset.remPenalty) || 0;
+        if (sel.value === "overdue") overdueCount++;
       });
 
-      const grand = totalPenalty + totalInterest + totalPrincipal;
-      document.getElementById("od_total_penalty").textContent = peso(totalPenalty);
-      document.getElementById("od_total_interest").textContent = peso(totalInterest);
+      const grand = totalPrincipal + totalInterest + totalPenalty;
+
       document.getElementById("od_total_principal").textContent = peso(totalPrincipal);
+      document.getElementById("od_total_interest").textContent = peso(totalInterest);
+      document.getElementById("od_total_penalty").textContent = peso(totalPenalty);
       document.getElementById("od_grand_total").textContent = peso(grand);
+
+      document.getElementById("od_principal_sub").textContent = "";
+      document.getElementById("od_interest_sub").textContent = "";
+
+      const badge = document.getElementById("od_overdue_badge");
+      badge.textContent = overdueCount > 0 ? `${overdueCount} overdue` : "";
+      badge.style.display = overdueCount > 0 ? "inline" : "none";
+
+      document.getElementById("od_penalty_wrap").style.display = totalPenalty > 0 ? "block" : "none";
     }
 
     // ── Global payment application across all overdue rows ────────────────
     function applyGlobalPayment() {
-      let remaining = parseFloat(document.getElementById("od_amount_paid").value) || 0;
-      if (remaining <= 0) return;
+      const amountPaid = parseFloat(document.getElementById("od_amount_paid").value) || 0;
+      if (amountPaid <= 0) return;
 
       const rows = [...document.querySelectorAll("#sched_body tr:not(.empty-row)")];
       const overdueRows = rows.filter(tr => {
         const sel = tr.querySelector(".status-select");
         return sel && sel.value === "overdue";
       });
+      if (overdueRows.length === 0) return;
 
       // Collect per-row data
       const rowData = overdueRows.map(tr => {
@@ -1078,28 +1087,95 @@
       const totalPrincipal = rowData.reduce((s, r) => s + r.pp, 0);
       const grandTotal = totalPenalty + totalInterest + totalPrincipal;
 
-      // Apply in order: all penalties → all interest → all principal
+      // Distribute: all penalties first → all interest → all principal
+      let remaining = amountPaid;
       let appliedPenalty = 0, appliedInterest = 0, appliedPrincipal = 0;
 
-      // Step 1 — penalties
-      if (remaining > 0) {
-        appliedPenalty = Math.min(remaining, totalPenalty);
-        remaining -= appliedPenalty;
+      // Step 1 — clear each row's penalty in order
+      for (const rd of rowData) {
+        if (remaining <= 0) break;
+        const take = Math.min(remaining, rd.penalty);
+        rd.appliedPenalty = take;
+        appliedPenalty += take;
+        remaining -= take;
       }
-      // Step 2 — interest
-      if (remaining > 0) {
-        appliedInterest = Math.min(remaining, totalInterest);
-        remaining -= appliedInterest;
+
+      // Step 2 — clear each row's interest in order
+      for (const rd of rowData) {
+        if (remaining <= 0) break;
+        const take = Math.min(remaining, rd.int);
+        rd.appliedInterest = take;
+        appliedInterest += take;
+        remaining -= take;
       }
-      // Step 3 — principal
-      if (remaining > 0) {
-        appliedPrincipal = Math.min(remaining, totalPrincipal);
-        remaining -= appliedPrincipal;
+
+      // Step 3 — clear each row's principal in order
+      for (const rd of rowData) {
+        if (remaining <= 0) break;
+        const take = Math.min(remaining, rd.pp);
+        rd.appliedPrincipal = take;
+        appliedPrincipal += take;
+        remaining -= take;
       }
 
       const excess = remaining;
 
-      // Build breakdown HTML
+      // ── Update each row in the schedule ──────────────────────────────
+      for (const rd of rowData) {
+        const penPaid = rd.appliedPenalty || 0;
+        const intPaid = rd.appliedInterest || 0;
+        const prinPaid = rd.appliedPrincipal || 0;
+        const rowTotal = rd.penalty + rd.int + rd.pp;
+        const rowPaid = penPaid + intPaid + prinPaid;
+        const fullyPaid = rowPaid >= rowTotal;
+
+        // Update remaining values on the row
+        rd.tr.dataset.remPenalty = Math.max(0, rd.penalty - penPaid);
+        rd.tr.dataset.remInterest = Math.max(0, rd.int - intPaid);
+        rd.tr.dataset.remPrincipal = Math.max(0, rd.pp - prinPaid);
+
+        // Update status select value and rowStatuses directly
+        const sel = rd.tr.querySelector(".status-select");
+        if (sel) {
+          const newStatus = fullyPaid ? "paid" : "overdue";
+          sel.value = newStatus;
+          sel.className = `status-select s-${newStatus}`;
+          rowStatuses[sel.dataset.idx] = newStatus;
+
+          // Update row highlight
+          rd.tr.className = newStatus === "paid" ? "row--paid" : "row--overdue";
+
+          // Update due date cell
+          const dueTd = rd.tr.querySelector(".due-date");
+          if (dueTd) {
+            dueTd.className = newStatus === "paid" ? "due-date" : "due-date due-over";
+          }
+
+          // Update payment cell
+          const paymentTd = rd.tr.querySelector(".payment-cell");
+          if (paymentTd) {
+            const base = parseFloat(rd.tr.dataset.basepayment) || (rd.pp + rd.int);
+            paymentTd.textContent = peso(fullyPaid ? base : base + rd.penalty);
+          }
+        }
+
+        // Update penalty cell
+        const penaltyTd = rd.tr.querySelector(".penalty-cell");
+        if (penaltyTd) {
+          if (!fullyPaid && rd.penalty > 0) {
+            const remainingPen = rd.penalty - penPaid;
+            penaltyTd.textContent = remainingPen > 0 ? peso(remainingPen) : "—";
+            penaltyTd.style.color = remainingPen > 0 ? "var(--danger)" : "var(--t3)";
+            penaltyTd.style.fontWeight = remainingPen > 0 ? "600" : "";
+          } else {
+            penaltyTd.textContent = "—";
+            penaltyTd.style.color = "var(--t3)";
+            penaltyTd.style.fontWeight = "";
+          }
+        }
+      }
+
+      // ── Build breakdown summary ───────────────────────────────────────
       const fullPen = appliedPenalty >= totalPenalty;
       const fullInt = appliedInterest >= totalInterest;
       const fullPrin = appliedPrincipal >= totalPrincipal;
@@ -1110,17 +1186,9 @@
       html += chip(`Principal: ${peso(appliedPrincipal)} / ${peso(totalPrincipal)}`, fullPrin ? "var(--ok)" : "var(--t3)", fullPrin);
       if (excess > 0) html += chip(`Excess: ${peso(excess)}`, "var(--status-hold)", true);
       html += `</div>`;
+      document.getElementById("od_breakdown").innerHTML = html;
 
-      // If fully paid, mark rows as paid
-      if (appliedPenalty + appliedInterest + appliedPrincipal >= grandTotal) {
-        overdueRows.forEach(tr => {
-          const sel = tr.querySelector(".status-select");
-          if (sel) { sel.value = "paid"; onStatusChange(sel); }
-        });
-      }
-
-      // Record to ledger
-      const amountPaid = parseFloat(document.getElementById("od_amount_paid").value) || 0;
+      // ── Record to ledger ─────────────────────────────────────────────
       const periodNums = overdueRows.map(tr => tr.querySelector("td:first-child").textContent.trim()).join(", ");
       recordPayment({
         periods: periodNums,
@@ -1133,7 +1201,9 @@
         remarks: ""
       });
 
-      document.getElementById("od_breakdown").innerHTML = html;
+      // ── Reset input and refresh panel ────────────────────────────────
+      document.getElementById("od_amount_paid").value = "";
+      updateOverduePanel();
     }
 
     // row statuses keyed by period index — persists across redraws until recalc
@@ -1273,7 +1343,6 @@
         document.getElementById("row_count").textContent = "No data";
         document.getElementById("export_btn").disabled = true;
         document.getElementById("summary_strip").classList.add("hidden");
-        document.getElementById("overdue_panel").style.display = "none";
         rowStatuses = {};
         return;
       }
@@ -1336,6 +1405,9 @@
           tr.dataset.interest = interestPerPeriod;
           tr.dataset.basepayment = payment;
           tr.dataset.duedate = dueDate ? dueDate.toISOString() : "";
+          tr.dataset.remPrincipal = amortPerPeriod;
+          tr.dataset.remInterest = interestPerPeriod;
+          tr.dataset.remPenalty = calcPenalty(amortPerPeriod, interestPerPeriod, dueDate);
           tr.innerHTML = `
           <td>${i}</td>
           <td>${peso(openingBalance)}</td>
@@ -1396,6 +1468,9 @@
           tr.dataset.interest = interest;
           tr.dataset.basepayment = payment;
           tr.dataset.duedate = dueDate ? dueDate.toISOString() : "";
+          tr.dataset.remPrincipal = principalPay;
+          tr.dataset.remInterest = interest;
+          tr.dataset.remPenalty = calcPenalty(principalPay, interest, dueDate);
           tr.innerHTML = `
           <td>${i}</td>
           <td>${peso(principalPay)}</td>
@@ -1460,10 +1535,7 @@
       const fields = ["loan_type", "collateral", "soa", "amort_type", "mf_freq", "principal", "interest", "months", "start_date", "manual_payment"];
       const data = {};
       fields.forEach(id => { data[id] = document.getElementById(id)?.value || ""; });
-
-      // Save row statuses
       data.rowStatuses = rowStatuses;
-      data.paymentLedger = paymentLedger;
 
       localStorage.setItem("loanCalcSave", JSON.stringify(data));
 
@@ -1483,7 +1555,6 @@
           if (el && data[id] !== undefined) el.value = data[id];
         });
         if (data.rowStatuses) rowStatuses = data.rowStatuses;
-        if (data.paymentLedger) { paymentLedger = data.paymentLedger; renderLedger(); }
         calculate();
       } catch (e) { }
     }
