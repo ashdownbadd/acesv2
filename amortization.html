@@ -735,6 +735,54 @@
       </div>
     </div>
 
+    <!-- Overdue Summary Panel -->
+    <div id="overdue_panel" style="display:none;margin-bottom:var(--gap)">
+      <div class="section-label">Overdue summary — application of payment</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div
+          style="padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(217,61,61,0.05);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div>
+              <div
+                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);font-family:var(--font-heading);margin-bottom:3px">
+                Total Penalty</div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--danger)"
+                id="od_total_penalty">₱0.00</div>
+            </div>
+            <div>
+              <div
+                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--status-overdue);font-family:var(--font-heading);margin-bottom:3px">
+                Total Interest</div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--status-overdue)"
+                id="od_total_interest">₱0.00</div>
+            </div>
+            <div>
+              <div
+                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);font-family:var(--font-heading);margin-bottom:3px">
+                Total Principal</div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)"
+                id="od_total_principal">₱0.00</div>
+            </div>
+            <div style="border-left:1px solid var(--border);padding-left:24px">
+              <div
+                style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);font-family:var(--font-heading);margin-bottom:3px">
+                Grand Total Due</div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text)"
+                id="od_grand_total">₱0.00</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="number" id="od_amount_paid" placeholder="Enter amount paid"
+              style="background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none;width:200px">
+            <button onclick="applyGlobalPayment()"
+              style="padding:8px 14px;border-radius:6px;border:none;background:var(--gold);color:#fff;font-family:var(--font-main);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Apply</button>
+          </div>
+        </div>
+        <div id="od_breakdown" style="padding:12px 18px;font-size:12px;color:var(--t3);font-family:var(--font-main)">
+          Enter an amount above to see how it will be applied across overdue periods.</div>
+      </div>
+    </div>
+
     <!-- Schedule Table -->
     <div class="table-card">
       <div class="table-card__head">
@@ -774,10 +822,49 @@
           </thead>
           <tbody id="sched_body">
             <tr class="empty-row">
-              <td colspan="11">Enter loan details above to generate the schedule</td>
+              <td colspan="10">Enter loan details above to generate the schedule</td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Payment Ledger -->
+    <div id="ledger_section" style="display:none;margin-top:var(--gap)">
+      <div class="section-label">Payment ledger</div>
+      <div class="table-card">
+        <div class="table-card__head">
+          <span class="table-card__title">Recorded payments</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="table-badge" id="ledger_count">0 records</span>
+            <button onclick="clearLedger()"
+              style="padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);font-family:var(--font-main);font-size:10px;font-weight:600;cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Clear
+              All</button>
+          </div>
+        </div>
+        <div class="tbl-wrap" style="max-height:280px">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left">#</th>
+                <th style="text-align:left">Date & Time</th>
+                <th style="text-align:left">Period(s)</th>
+                <th style="text-align:right">Amount Paid</th>
+                <th style="text-align:right;color:var(--danger)">→ Penalty</th>
+                <th style="text-align:right;color:var(--status-overdue)">→ Interest</th>
+                <th style="text-align:right;color:var(--t2)">→ Principal</th>
+                <th style="text-align:right">Excess</th>
+                <th style="text-align:left">Type</th>
+                <th style="text-align:left">Remarks</th>
+              </tr>
+            </thead>
+            <tbody id="ledger_body">
+              <tr class="empty-row">
+                <td colspan="10">No payments recorded yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -856,44 +943,6 @@
       return applied;
     }
 
-    function buildBreakdown(applied, penalty, interest, principal) {
-      if (!applied || (applied.penalty === 0 && applied.interest === 0 && applied.principal === 0)) {
-        return `<span style="color:var(--t3);font-size:11px">—</span>`;
-      }
-
-      let html = `<div style="display:flex;flex-direction:column;gap:3px;min-width:140px">`;
-
-      if (penalty > 0) {
-        const full = applied.penalty >= penalty;
-        html += chip(
-          `Penalty: ${peso(applied.penalty)}${!full ? ` / ${peso(penalty)}` : ""}`,
-          full ? "var(--ok)" : "var(--danger)",
-          full
-        );
-      }
-
-      const fullInt = applied.interest >= interest;
-      html += chip(
-        `Interest: ${peso(applied.interest)}${!fullInt ? ` / ${peso(interest)}` : ""}`,
-        fullInt ? "var(--ok)" : "var(--status-overdue)",
-        fullInt
-      );
-
-      const fullPrin = applied.principal >= principal;
-      html += chip(
-        `Principal: ${peso(applied.principal)}${!fullPrin ? ` / ${peso(principal)}` : ""}`,
-        fullPrin ? "var(--ok)" : "var(--t3)",
-        fullPrin
-      );
-
-      if (applied.remaining > 0) {
-        html += chip(`Excess: ${peso(applied.remaining)}`, "var(--status-hold)", true);
-      }
-
-      html += `</div>`;
-      return html;
-    }
-
     function chip(label, color, filled) {
       const bg = filled ? color : "transparent";
       const text = filled ? "#fff" : color;
@@ -901,37 +950,197 @@
       return `<span style="display:inline-block;font-size:9px;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:20px;background:${bg};color:${text};border:1px solid ${border};white-space:nowrap">${label}</span>`;
     }
 
-    function onAmountPaidInput(input) {
-      const tr = input.closest("tr");
-      const amountPaid = parseFloat(input.value) || 0;
-      const pp = parseFloat(tr.dataset.principal) || 0;
-      const int = parseFloat(tr.dataset.interest) || 0;
-      const due = tr.dataset.duedate ? new Date(tr.dataset.duedate) : null;
+    // ── Payment Ledger ────────────────────────────────────────────────────
+    let paymentLedger = [];
 
-      // Always derive penalty from due date — don't rely on status select
-      const penalty = calcPenalty(pp, int, due);
-      const totalOwed = pp + int + penalty;
+    function fmtDateTime(d) {
+      return d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" }) +
+        " " + d.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" });
+    }
 
-      const applied = applyPayment(amountPaid, penalty, int, pp);
-      tr.querySelector(".breakdown-cell").innerHTML = buildBreakdown(applied, penalty, int, pp);
+    function recordPayment({ periods, amountPaid, penalty, interest, principal, excess, type, remarks }) {
+      paymentLedger.push({
+        id: Date.now(),
+        datetime: new Date().toISOString(),
+        periods,
+        amountPaid,
+        penalty,
+        interest,
+        principal,
+        excess,
+        type,
+        remarks: remarks || ""
+      });
+      renderLedger();
+    }
 
-      // Auto-update status
-      const sel = tr.querySelector(".status-select");
-      if (sel) {
-        if (amountPaid >= totalOwed) {
-          sel.value = "paid";
-        } else if (amountPaid > 0) {
-          sel.value = penalty > 0 ? "overdue" : "pending";
-        }
-        onStatusChange(sel);
+    function renderLedger() {
+      const tbody = document.getElementById("ledger_body");
+      const section = document.getElementById("ledger_section");
+
+      if (paymentLedger.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">No payments recorded yet</td></tr>`;
+        section.style.display = "none";
+        document.getElementById("ledger_count").textContent = "0 records";
+        return;
       }
+
+      section.style.display = "block";
+      document.getElementById("ledger_count").textContent = `${paymentLedger.length} record${paymentLedger.length > 1 ? "s" : ""}`;
+
+      tbody.innerHTML = "";
+      paymentLedger.forEach((entry, idx) => {
+        const typeColor = entry.type === "Global" ? "var(--danger)" : "var(--status-hold)";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+        <td style="color:var(--t3);font-family:var(--font-mono)">${idx + 1}</td>
+        <td style="white-space:nowrap;font-size:11px">${fmtDateTime(new Date(entry.datetime))}</td>
+        <td style="font-family:var(--font-mono);font-size:11px">Period ${entry.periods}</td>
+        <td style="font-family:var(--font-mono);font-weight:600">${peso(entry.amountPaid)}</td>
+        <td style="font-family:var(--font-mono);color:${entry.penalty > 0 ? "var(--danger)" : "var(--t3)"}">${entry.penalty > 0 ? peso(entry.penalty) : "—"}</td>
+        <td style="font-family:var(--font-mono);color:${entry.interest > 0 ? "var(--status-overdue)" : "var(--t3)"}">${entry.interest > 0 ? peso(entry.interest) : "—"}</td>
+        <td style="font-family:var(--font-mono)">${entry.principal > 0 ? peso(entry.principal) : "—"}</td>
+        <td style="font-family:var(--font-mono);color:var(--t3)">${entry.excess > 0 ? peso(entry.excess) : "—"}</td>
+        <td><span style="font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;border:1px solid ${typeColor};color:${typeColor};background:${typeColor}18">${entry.type}</span></td>
+        <td style="font-size:11px;color:var(--t2);max-width:180px;overflow:hidden;text-overflow:ellipsis">
+          <input type="text" value="${entry.remarks}" placeholder="Add note…" onchange="updateLedgerRemark(${entry.id}, this.value)" style="width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-main);font-size:11px;padding:2px 0">
+        </td>
+      `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateLedgerRemark(id, value) {
+      const entry = paymentLedger.find(e => e.id === id);
+      if (entry) entry.remarks = value;
+    }
+
+    function clearLedger() {
+      if (!confirm("Clear all payment records?")) return;
+      paymentLedger = [];
+      renderLedger();
+    }
+
+    // ── Update the overdue summary panel after any recalc ────────────────
+    function updateOverduePanel() {
+      const rows = [...document.querySelectorAll("#sched_body tr:not(.empty-row)")];
+      const overdueRows = rows.filter(tr => {
+        const sel = tr.querySelector(".status-select");
+        return sel && sel.value === "overdue";
+      });
+
+      const panel = document.getElementById("overdue_panel");
+      if (overdueRows.length === 0) {
+        panel.style.display = "none";
+        return;
+      }
+
+      panel.style.display = "block";
+
+      let totalPenalty = 0, totalInterest = 0, totalPrincipal = 0;
+      overdueRows.forEach(tr => {
+        const pp = parseFloat(tr.dataset.principal) || 0;
+        const int = parseFloat(tr.dataset.interest) || 0;
+        const due = tr.dataset.duedate ? new Date(tr.dataset.duedate) : null;
+        totalPenalty += calcPenalty(pp, int, due);
+        totalInterest += int;
+        totalPrincipal += pp;
+      });
+
+      const grand = totalPenalty + totalInterest + totalPrincipal;
+      document.getElementById("od_total_penalty").textContent = peso(totalPenalty);
+      document.getElementById("od_total_interest").textContent = peso(totalInterest);
+      document.getElementById("od_total_principal").textContent = peso(totalPrincipal);
+      document.getElementById("od_grand_total").textContent = peso(grand);
+    }
+
+    // ── Global payment application across all overdue rows ────────────────
+    function applyGlobalPayment() {
+      let remaining = parseFloat(document.getElementById("od_amount_paid").value) || 0;
+      if (remaining <= 0) return;
+
+      const rows = [...document.querySelectorAll("#sched_body tr:not(.empty-row)")];
+      const overdueRows = rows.filter(tr => {
+        const sel = tr.querySelector(".status-select");
+        return sel && sel.value === "overdue";
+      });
+
+      // Collect per-row data
+      const rowData = overdueRows.map(tr => {
+        const pp = parseFloat(tr.dataset.principal) || 0;
+        const int = parseFloat(tr.dataset.interest) || 0;
+        const due = tr.dataset.duedate ? new Date(tr.dataset.duedate) : null;
+        return { tr, pp, int, penalty: calcPenalty(pp, int, due) };
+      });
+
+      const totalPenalty = rowData.reduce((s, r) => s + r.penalty, 0);
+      const totalInterest = rowData.reduce((s, r) => s + r.int, 0);
+      const totalPrincipal = rowData.reduce((s, r) => s + r.pp, 0);
+      const grandTotal = totalPenalty + totalInterest + totalPrincipal;
+
+      // Apply in order: all penalties → all interest → all principal
+      let appliedPenalty = 0, appliedInterest = 0, appliedPrincipal = 0;
+
+      // Step 1 — penalties
+      if (remaining > 0) {
+        appliedPenalty = Math.min(remaining, totalPenalty);
+        remaining -= appliedPenalty;
+      }
+      // Step 2 — interest
+      if (remaining > 0) {
+        appliedInterest = Math.min(remaining, totalInterest);
+        remaining -= appliedInterest;
+      }
+      // Step 3 — principal
+      if (remaining > 0) {
+        appliedPrincipal = Math.min(remaining, totalPrincipal);
+        remaining -= appliedPrincipal;
+      }
+
+      const excess = remaining;
+
+      // Build breakdown HTML
+      const fullPen = appliedPenalty >= totalPenalty;
+      const fullInt = appliedInterest >= totalInterest;
+      const fullPrin = appliedPrincipal >= totalPrincipal;
+
+      let html = `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">`;
+      html += chip(`Penalty: ${peso(appliedPenalty)} / ${peso(totalPenalty)}`, fullPen ? "var(--ok)" : "var(--danger)", fullPen);
+      html += chip(`Interest: ${peso(appliedInterest)} / ${peso(totalInterest)}`, fullInt ? "var(--ok)" : "var(--status-overdue)", fullInt);
+      html += chip(`Principal: ${peso(appliedPrincipal)} / ${peso(totalPrincipal)}`, fullPrin ? "var(--ok)" : "var(--t3)", fullPrin);
+      if (excess > 0) html += chip(`Excess: ${peso(excess)}`, "var(--status-hold)", true);
+      html += `</div>`;
+
+      // If fully paid, mark rows as paid
+      if (appliedPenalty + appliedInterest + appliedPrincipal >= grandTotal) {
+        overdueRows.forEach(tr => {
+          const sel = tr.querySelector(".status-select");
+          if (sel) { sel.value = "paid"; onStatusChange(sel); }
+        });
+      }
+
+      // Record to ledger
+      const amountPaid = parseFloat(document.getElementById("od_amount_paid").value) || 0;
+      const periodNums = overdueRows.map(tr => tr.querySelector("td:first-child").textContent.trim()).join(", ");
+      recordPayment({
+        periods: periodNums,
+        amountPaid,
+        penalty: appliedPenalty,
+        interest: appliedInterest,
+        principal: appliedPrincipal,
+        excess,
+        type: "Global",
+        remarks: ""
+      });
+
+      document.getElementById("od_breakdown").innerHTML = html;
     }
 
     // row statuses keyed by period index — persists across redraws until recalc
     let rowStatuses = {};
 
-    const THEAD_NORMAL = `<th>Period</th><th style="text-align:right">Principal</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th><th>Due Date</th><th>Status</th><th style="text-align:right;color:var(--danger)">Penalty</th><th>Amount Paid</th><th>Breakdown</th>`;
-    const THEAD_MF = `<th>Period</th><th style="text-align:right">Opening Balance</th><th style="text-align:right">Amortization</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th><th>Due Date</th><th>Status</th><th style="text-align:right;color:var(--danger)">Penalty</th><th>Amount Paid</th><th>Breakdown</th>`;
+    const THEAD_NORMAL = `<th>Period</th><th style="text-align:right">Principal</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th><th>Due Date</th><th>Status</th><th style="text-align:right;color:var(--danger)">Penalty</th><th>Remarks</th>`;
+    const THEAD_MF = `<th>Period</th><th style="text-align:right">Opening Balance</th><th style="text-align:right">Amortization</th><th style="text-align:right">Interest</th><th style="text-align:right">Payment</th><th style="text-align:right">Balance</th><th>Due Date</th><th>Status</th><th style="text-align:right;color:var(--danger)">Penalty</th><th>Remarks</th>`;
 
     function buildStatusSelect(idx, status) {
       const opts = ["pending", "paid", "overdue"];
@@ -992,6 +1201,8 @@
           penaltyTd.style.fontWeight = "";
         }
       }
+
+      updateOverduePanel();
     }
 
     function applyRowState(tr, idx, dueDate, statusOverride) {
@@ -1052,7 +1263,7 @@
       const tbody = document.getElementById("sched_body");
       const resultEl = document.getElementById("monthly_display");
       const resultSub = document.getElementById("result_sub");
-      const colSpan = isMF ? 11 : 10;
+      const colSpan = isMF ? 10 : 9;
 
       const invalid = !p || !m || (isMF && !r) || (!isMF && t !== "manual" && !r) || (!isMF && t === "manual" && !man);
       if (invalid) {
@@ -1062,6 +1273,7 @@
         document.getElementById("row_count").textContent = "No data";
         document.getElementById("export_btn").disabled = true;
         document.getElementById("summary_strip").classList.add("hidden");
+        document.getElementById("overdue_panel").style.display = "none";
         rowStatuses = {};
         return;
       }
@@ -1089,13 +1301,8 @@
         return `<td class="penalty-cell" style="text-align:right;color:var(--danger);font-weight:600">${peso(pen)}</td>`;
       }
 
-      // ── Amount paid input + breakdown ─────────────────────────────────
-      function amountPaidCell(idx) {
-        return `<td style="min-width:120px"><input type="number" class="amt-paid-input" data-idx="${idx}" placeholder="0.00" oninput="onAmountPaidInput(this)" style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-family:var(--font-mono);font-size:11px;outline:none"></td>`;
-      }
-
-      function breakdownCell() {
-        return `<td class="breakdown-cell" style="min-width:160px;padding:6px 16px"><span style="color:var(--t3);font-size:11px">—</span></td>`;
+      function remarksCell(idx) {
+        return `<td style="min-width:160px"><input type="text" class="remarks-input" data-idx="${idx}" placeholder="Add note…" style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-family:var(--font-main);font-size:11px;outline:none"></td>`;
       }
 
       // ── MICROFINANCE MODE ─────────────────────────────────────────────
@@ -1138,8 +1345,7 @@
           <td>${peso(balance)}</td>
           ${dateCells(dueDate, i, st)}
           ${penaltyCell(amortPerPeriod, interestPerPeriod, dueDate, st)}
-          ${amountPaidCell(i)}
-          ${breakdownCell()}
+          ${remarksCell(i)}
         `;
           tbody.appendChild(tr);
           applyRowState(tr, i, dueDate || new Date(0), st);
@@ -1198,8 +1404,7 @@
           <td>${peso(balance)}</td>
           ${dateCells(dueDate, i, st)}
           ${penaltyCell(principalPay, interest, dueDate, st)}
-          ${amountPaidCell(i)}
-          ${breakdownCell()}
+          ${remarksCell(i)}
         `;
           tbody.appendChild(tr);
           applyRowState(tr, i, dueDate || new Date(0), st);
@@ -1216,6 +1421,7 @@
 
       document.getElementById("export_btn").disabled = false;
       document.getElementById("summary_strip").classList.remove("hidden");
+      updateOverduePanel();
     }
 
     function exportCSV() {
@@ -1257,6 +1463,7 @@
 
       // Save row statuses
       data.rowStatuses = rowStatuses;
+      data.paymentLedger = paymentLedger;
 
       localStorage.setItem("loanCalcSave", JSON.stringify(data));
 
@@ -1276,11 +1483,13 @@
           if (el && data[id] !== undefined) el.value = data[id];
         });
         if (data.rowStatuses) rowStatuses = data.rowStatuses;
+        if (data.paymentLedger) { paymentLedger = data.paymentLedger; renderLedger(); }
         calculate();
       } catch (e) { }
     }
 
     document.querySelectorAll("input, select").forEach(el => {
+      if (el.id === "od_amount_paid") return;
       el.addEventListener("input", calculate);
       el.addEventListener("change", calculate);
     });
