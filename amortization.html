@@ -1074,12 +1074,12 @@
       });
       if (overdueRows.length === 0) return;
 
-      // Collect per-row data
+      // Collect per-row REMAINING data (not original amounts)
       const rowData = overdueRows.map(tr => {
-        const pp = parseFloat(tr.dataset.principal) || 0;
-        const int = parseFloat(tr.dataset.interest) || 0;
-        const due = tr.dataset.duedate ? new Date(tr.dataset.duedate) : null;
-        return { tr, pp, int, penalty: calcPenalty(pp, int, due) };
+        const pp = parseFloat(tr.dataset.remPrincipal) || 0;
+        const int = parseFloat(tr.dataset.remInterest) || 0;
+        const penalty = parseFloat(tr.dataset.remPenalty) || 0;
+        return { tr, pp, int, penalty };
       });
 
       const totalPenalty = rowData.reduce((s, r) => s + r.penalty, 0);
