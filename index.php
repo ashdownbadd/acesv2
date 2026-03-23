@@ -129,6 +129,9 @@ if ($auth->isLoggedIn()) {
         $page = $_GET['page'] ?? 'dashboard';
 
         switch ($page) {
+            case 'amortization':
+                include __DIR__ . '/views/auth/admin/amortization.php';
+                break;
             case 'settings':
                 include __DIR__ . '/views/auth/admin/settings.php';
                 break;

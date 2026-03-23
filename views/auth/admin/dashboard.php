@@ -103,12 +103,25 @@ if (!function_exists('fullName')) {
                                         </span>
                                     </td>
                                     <td class="c-table__cell" style="text-align: center;">
-                                        <button class="btn-del" onclick="event.stopPropagation(); confirmDelete(<?= $m['id'] ?>, '<?= htmlspecialchars(fullName($m)) ?>')">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            </svg>
-                                        </button>
+                                        <div class="c-table__actions-wrapper">
+                                            <button class="c-btn-icon c-btn-icon--amort"
+                                                onclick="event.stopPropagation(); window.location='amortization.html?member_id=<?= $m['id'] ?>'"
+                                                title="Amortization">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                                </svg>
+                                            </button>
+
+                                            <button class="c-btn-icon c-btn-icon--del"
+                                                onclick="event.stopPropagation(); confirmDelete(<?= $m['id'] ?>, '<?= htmlspecialchars(fullName($m)) ?>')"
+                                                title="Delete Member">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

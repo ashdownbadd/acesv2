@@ -320,6 +320,56 @@ body {
     outline: none;
 }
 
+/* Container to keep buttons side-by-side */
+.c-table__actions-wrapper {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Base Circular Button Style */
+.c-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%; /* Makes it a circle */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+
+/* Amortization Button Colors */
+.c-btn-icon--amort {
+    color: var(--t2);
+}
+
+.c-btn-icon--amort:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-dim);
+}
+
+/* Delete Button Colors */
+.c-btn-icon--del {
+    color: var(--t3);
+}
+
+.c-btn-icon--del:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: rgba(217, 61, 61, 0.1); /* Using your danger color with transparency */
+}
+
+/* Tactile feedback on click */
+.c-btn-icon:active {
+    transform: scale(0.92);
+}
+
 .c-table-card__search:focus {
     border-color: var(--gold);
 }
