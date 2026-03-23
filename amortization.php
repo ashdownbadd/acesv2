@@ -800,40 +800,17 @@ if ($memberId > 0) {
 
 <body>
   <div class="page">
-    <?php if ($memberId > 0): ?>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap);padding-bottom:var(--gap);border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);font-family:var(--font-heading);margin-bottom:4px">Loan Amortization</div>
-          <div style="font-family:var(--font-heading);font-size:clamp(16px,2.5vw,22px);font-weight:700;color:var(--text)"><?= htmlspecialchars($memberName ?: 'Member #' . $memberId) ?></div>
-        </div>
-        <a href="?page=dashboard" style="font-size:11px;font-weight:600;color:var(--t3);text-decoration:none;display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-main);transition:all .2s" onmouseover="this.style.background='var(--raised)'" onmouseout="this.style.background=''">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M10 12L6 8l4-4" />
-          </svg>
-          Back to Dashboard
-        </a>
-      </div>
-    <?php endif; ?>
+    <a href="index.php?page=dashboard"
+      style="font-size:11px;font-weight:600;color:var(--t3);text-decoration:none;display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-main);transition:all .2s"
+      onmouseover="this.style.background='var(--raised)'"
+      onmouseout="this.style.background=''">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M10 12L6 8l4-4" />
+      </svg>
+      Back to Dashboard
+    </a>
     <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
 
-    <?php if ($memberId > 0): ?>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap);padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
-        <div style="display:flex;align-items:center;gap:10px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <span style="font-family:var(--font-heading);font-weight:700;font-size:13px;color:var(--text)"><?= htmlspecialchars($memberName) ?></span>
-          <span style="font-size:11px;color:var(--t3);font-family:var(--font-mono)">Member #<?= $memberId ?></span>
-          <?php if ($existingLoan): ?>
-            <span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:rgba(39,168,88,0.1);color:var(--ok);border:1px solid rgba(39,168,88,0.3)">Loan loaded</span>
-          <?php else: ?>
-            <span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:var(--raised);color:var(--t3);border:1px solid var(--border)">No loan on record</span>
-          <?php endif; ?>
-        </div>
-        <a href="?page=dashboard" style="font-size:11px;color:var(--t3);text-decoration:none;font-family:var(--font-main)">← Back to dashboard</a>
-      </div>
-    <?php endif; ?>
 
     <!-- PHP data injected for JS to consume -->
     <script>

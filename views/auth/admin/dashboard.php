@@ -105,7 +105,7 @@ if (!function_exists('fullName')) {
                                     <td class="c-table__cell" style="text-align: center;">
                                         <div class="c-table__actions-wrapper">
                                             <button class="c-btn-icon c-btn-icon--amort"
-                                                onclick="event.stopPropagation(); window.location='amortization.html?member_id=<?= $m['id'] ?>'"
+                                                onclick="event.stopPropagation(); window.location='amortization.php?member_id=<?= $m['id'] ?>'"
                                                 title="Amortization">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                     <line x1="12" y1="1" x2="12" y2="23"></line>

@@ -130,7 +130,7 @@ if ($auth->isLoggedIn()) {
 
         switch ($page) {
             case 'amortization':
-                include __DIR__ . '/views/auth/admin/amortization.php';
+                include __DIR__ . '/amortization.php';
                 break;
             case 'settings':
                 include __DIR__ . '/views/auth/admin/settings.php';
