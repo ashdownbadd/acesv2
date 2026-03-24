@@ -1,7 +1,40 @@
 <?php
-require_once 'core/db.php'; // adjust path if needed
 
+/**
+ * ACESv3 - Loan Amortization & Payment Tracking
+ */
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+require_once 'core/db.php';
 $pdo = (new DB())->connect();
+
+// 1. AUTHENTICATION & NAVBAR DATA MAPPING
+$userId = $_SESSION['user_id'] ?? 0;
+$user = [];
+
+if ($userId > 0) {
+  // Fetch from your 'admin' table
+  $uStmt = $pdo->prepare("SELECT * FROM admin WHERE id = ?");
+  $uStmt->execute([$userId]);
+  $dbUser = $uStmt->fetch(PDO::FETCH_ASSOC);
+
+  if ($dbUser) {
+    $user = $dbUser;
+    // Map 'username' to 'name' so navbar.php doesn't throw a warning
+    $user['name'] = $dbUser['username'] ?? 'Admin';
+    $user['role'] = $dbUser['role'] ?? 'Staff';
+    $user['avatar'] = $dbUser['avatar'] ?? '';
+  }
+}
+
+// Fallback to prevent any undefined key errors in the partial
+if (empty($user)) {
+  $user = ['name' => 'Guest', 'role' => 'Viewer', 'avatar' => ''];
+}
+
+$isAdmin = (strtolower($user['role']) === 'admin');
 
 // ============================================================
 // API — handle AJAX requests
@@ -12,14 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
 
   switch ($_GET['action']) {
 
-    // ── Save entire loan + schedule ─────────────────────────────
     case 'save_loan':
       try {
         $pdo->beginTransaction();
-
         $loan = $body['loan'];
 
-        // Insert or update loan
         if (!empty($loan['id'])) {
           $stmt = $pdo->prepare("
                         UPDATE loans SET
@@ -35,8 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
                             notarial_fee=:notarial_fee, net_proceeds=:net_proceeds
                         WHERE id=:id
                     ");
-          $loan_params = array_merge($loan, ['id' => $loan['id']]);
-          $stmt->execute($loan_params);
+          $stmt->execute($loan);
           $loan_id = $loan['id'];
         } else {
           $stmt = $pdo->prepare("
@@ -55,9 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
           $loan_id = $pdo->lastInsertId();
         }
 
-        // Replace schedule rows
         $pdo->prepare("DELETE FROM loan_schedule WHERE loan_id = ?")->execute([$loan_id]);
-
         $sched = $pdo->prepare("
                     INSERT INTO loan_schedule
                         (loan_id, period, principal, interest, payment, due_date,
@@ -78,7 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
       }
       break;
 
-    // ── Save a single payment record ────────────────────────────
     case 'save_payment':
       try {
         $p = $body['payment'];
@@ -97,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
       }
       break;
 
-    // ── Update schedule row statuses + rem values ───────────────
     case 'update_schedule':
       try {
         $stmt = $pdo->prepare("
@@ -116,7 +141,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
       }
       break;
 
-    // ── Load loan by member_id (most recent) ────────────────────
     case 'load_by_member':
       try {
         $mid  = intval($body['member_id']);
@@ -143,48 +167,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
       }
       break;
 
-    // ── Load loan + schedule + payments ────────────────────────
-    case 'load_loan':
-      try {
-        $id   = intval($body['loan_id']);
-        $loan = $pdo->prepare("SELECT * FROM loans WHERE id = ?");
-        $loan->execute([$id]);
-        $loanData = $loan->fetch();
-
-        $sched = $pdo->prepare("SELECT * FROM loan_schedule WHERE loan_id = ? ORDER BY period");
-        $sched->execute([$id]);
-        $schedData = $sched->fetchAll();
-
-        $pays = $pdo->prepare("SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY paid_at");
-        $pays->execute([$id]);
-        $paysData = $pays->fetchAll();
-
-        echo json_encode([
-          'loan'     => $loanData,
-          'schedule' => $schedData,
-          'payments' => $paysData,
-        ]);
-      } catch (Exception $e) {
-        echo json_encode(['error' => $e->getMessage()]);
-      }
-      break;
-
-    // ── List all loans ──────────────────────────────────────────
-    case 'list_loans':
-      try {
-        $stmt = $pdo->query("SELECT id, loan_type, principal_amount, terms_months, start_date, created_at FROM loans ORDER BY created_at DESC");
-        echo json_encode($stmt->fetchAll());
-      } catch (Exception $e) {
-        echo json_encode(['error' => $e->getMessage()]);
-      }
-      break;
-
     default:
       http_response_code(400);
       echo json_encode(['error' => 'Unknown action']);
   }
   exit;
 }
+
 // ── Member context from URL ──────────────────────────────────────────
 $memberId   = intval($_GET['member_id'] ?? 0);
 $memberName = '';
@@ -196,10 +185,9 @@ if ($memberId > 0) {
     $mStmt->execute([$memberId]);
     $mRow = $mStmt->fetch();
     if ($mRow) {
-      $memberName = trim($mRow['first_name'] . ' ' . $mRow['middle_name'] . ' ' . $mRow['last_name']);
+      $memberName = trim(($mRow['first_name'] ?? '') . ' ' . ($mRow['middle_name'] ?? '') . ' ' . ($mRow['last_name'] ?? ''));
     }
 
-    // Load most recent loan for this member
     $lStmt = $pdo->prepare("SELECT * FROM loans WHERE member_id = ? ORDER BY created_at DESC LIMIT 1");
     $lStmt->execute([$memberId]);
     $loanRow = $lStmt->fetch();
@@ -216,6 +204,7 @@ if ($memberId > 0) {
       ];
     }
   } catch (PDOException $e) {
+    // Log error if needed
   }
 }
 ?>
@@ -228,6 +217,8 @@ if ($memberId > 0) {
   <title>Loan Amortization Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/variables.css">
   <style>
     *,
     *::before,
@@ -357,7 +348,6 @@ if ($memberId > 0) {
       font-size: clamp(12px, 1.3vw, 13px);
       outline: none;
       appearance: none;
-      transition: border-color .2s, background .2s;
     }
 
     .card select {
@@ -421,7 +411,6 @@ if ($memberId > 0) {
       grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
       gap: var(--gap);
       margin-bottom: var(--gap);
-      transition: opacity .3s;
     }
 
     .summary-strip.hidden {
@@ -604,7 +593,6 @@ if ($memberId > 0) {
       background-repeat: no-repeat;
       background-position: right 6px center;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23888' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      transition: all .15s;
     }
 
     .status-select.s-pending {
@@ -693,7 +681,6 @@ if ($memberId > 0) {
       letter-spacing: .06em;
       text-transform: uppercase;
       cursor: pointer;
-      transition: all .2s;
       white-space: nowrap;
     }
 
@@ -726,7 +713,6 @@ if ($memberId > 0) {
       letter-spacing: .06em;
       text-transform: uppercase;
       cursor: pointer;
-      transition: all .2s;
       white-space: nowrap;
     }
 
@@ -753,7 +739,6 @@ if ($memberId > 0) {
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       opacity: 0;
       transform: translateY(10px);
-      transition: all .3s;
       pointer-events: none;
       z-index: 999;
       display: flex;
@@ -788,7 +773,6 @@ if ($memberId > 0) {
       font-weight: 600;
       color: var(--t2);
       cursor: pointer;
-      transition: all .2s;
       z-index: 100;
     }
 
@@ -799,9 +783,12 @@ if ($memberId > 0) {
 </head>
 
 <body>
+
+  <?php include 'views/auth/partials/navbar.php'; ?>
+
   <div class="page">
     <a href="index.php?page=dashboard"
-      style="font-size:11px;font-weight:600;color:var(--t3);text-decoration:none;display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-main);transition:all .2s"
+      style="font-size:11px;font-weight:600;color:var(--t3);text-decoration:none;display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-main);"
       onmouseover="this.style.background='var(--raised)'"
       onmouseout="this.style.background=''">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -809,7 +796,7 @@ if ($memberId > 0) {
       </svg>
       Back to Dashboard
     </a>
-    <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+
 
 
     <!-- PHP data injected for JS to consume -->
@@ -1037,7 +1024,6 @@ if ($memberId > 0) {
           <span class="table-card__title">Recorded payments</span>
           <div style="display:flex;align-items:center;gap:10px">
             <span class="table-badge" id="ledger_count">0 records</span>
-            <button onclick="clearLedger()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);font-family:var(--font-main);font-size:10px;font-weight:600;cursor:pointer;letter-spacing:.06em;text-transform:uppercase">Clear All</button>
           </div>
         </div>
         <div class="tbl-wrap" style="max-height:280px">
@@ -1053,11 +1039,12 @@ if ($memberId > 0) {
                 <th style="text-align:right">Excess</th>
                 <th style="text-align:left">Type</th>
                 <th style="text-align:left">Remarks</th>
+                <th style="text-align:center">Actions</th>
               </tr>
             </thead>
             <tbody id="ledger_body">
               <tr class="empty-row">
-                <td colspan="9">No payments recorded yet</td>
+                <td colspan="10">No payments recorded yet</td>
               </tr>
             </tbody>
           </table>
@@ -1367,7 +1354,7 @@ if ($memberId > 0) {
         section = document.getElementById("ledger_section");
       document.getElementById("ledger_count").textContent = `${paymentLedger.length} record${paymentLedger.length!==1?"s":""}`;
       if (paymentLedger.length === 0) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="9">No payments recorded yet</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">No payments recorded yet</td></tr>`;
         section.style.display = "none";
         return;
       }
@@ -1385,7 +1372,15 @@ if ($memberId > 0) {
         <td style="font-family:var(--font-mono)">${e.principal>0?peso(e.principal):"—"}</td>
         <td style="font-family:var(--font-mono);color:var(--t3)">${e.excess>0?peso(e.excess):"—"}</td>
         <td><span style="font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;border:1px solid ${tc};color:${tc};background:${tc}18">${e.type}</span></td>
-        <td><input type="text" value="${e.remarks}" placeholder="Add note…" onchange="updateLedgerRemark(${e.id},this.value)" style="width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-main);font-size:11px;padding:2px 0"></td>`;
+        <td><input type="text" value="${e.remarks}" placeholder="Add note…" onchange="updateLedgerRemark(${e.id},this.value)" style="width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-main);font-size:11px;padding:2px 0"></td>
+        <td style="text-align:center;white-space:nowrap">
+          <button onclick="editLedgerEntry(${e.id})" title="Edit" style="background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;color:var(--t2)" onmouseover="this.style.background='var(--raised)'" onmouseout="this.style.background='none'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button onclick="deleteLedgerEntry(${e.id})" title="Delete" style="background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;color:var(--danger)" onmouseover="this.style.background='rgba(217,61,61,0.08)'" onmouseout="this.style.background='none'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1395,9 +1390,24 @@ if ($memberId > 0) {
       if (e) e.remarks = value;
     }
 
-    function clearLedger() {
-      if (!confirm("Clear all payment records?")) return;
-      paymentLedger = [];
+    function deleteLedgerEntry(id) {
+      if (!confirm("Delete this payment record?")) return;
+      paymentLedger = paymentLedger.filter(e => e.id !== id);
+      renderLedger();
+    }
+
+    function editLedgerEntry(id) {
+      const entry = paymentLedger.find(e => e.id === id);
+      if (!entry) return;
+      const newAmount = prompt("Edit amount paid:", entry.amountPaid);
+      if (newAmount === null) return;
+      const parsed = parseFloat(newAmount);
+      if (isNaN(parsed) || parsed < 0) {
+        alert("Invalid amount.");
+        return;
+      }
+      entry.amountPaid = parsed;
+      entry.savedToDb = false; // mark as needing re-save
       renderLedger();
     }
 
@@ -1898,7 +1908,44 @@ if ($memberId > 0) {
 
     // Load existing loan data if member was passed from dashboard
     loadFromDb();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // 1. THEME TOGGLE (Dark Mode)
+      const themeToggle = document.getElementById('theme-toggle');
+      const htmlEl = document.documentElement;
+
+      // Check for saved user preference
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      htmlEl.setAttribute('data-theme', savedTheme);
+
+      if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          const currentTheme = htmlEl.getAttribute('data-theme');
+          const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+          htmlEl.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+        });
+      }
+
+      // 2. PROFILE DROPDOWN
+      const profilePill = document.querySelector('.c-navbar__profile');
+      const dropdown = document.querySelector('.c-navbar__dropdown');
+
+      if (profilePill && dropdown) {
+        profilePill.addEventListener('click', function(e) {
+          e.stopPropagation();
+          dropdown.classList.toggle('is-active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function() {
+          dropdown.classList.remove('is-active');
+        });
+      }
+    });
   </script>
+
 </body>
 
 </html>
