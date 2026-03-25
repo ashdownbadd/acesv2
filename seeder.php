@@ -1,35 +1,29 @@
 <?php
-// Ensure this is run in a secure environment
-require_once __DIR__ . '/core/db.php';
-
-$dbClass = new DB();
-$db = $dbClass->connect();
-
-$statuses = ['Active', 'Deceased', 'Delisted', 'On-Hold', 'Overdue', 'Under Litigation'];
+require_once 'core/db.php';
 
 try {
-    // Start transaction for safety
-    $db->beginTransaction();
+    $pdo = (new DB())->connect();
 
-    foreach ($statuses as $status) {
-        // Just for visual verification in the terminal
-        echo "Updating random members to: $status\n";
+    // The plain text password we want everyone to have
+    $plainPassword = "password";
+
+    // Create the secure hash
+    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+
+    echo "Starting password reset seeder...<br>";
+
+    // Update every single row in the members table
+    $sql = "UPDATE members SET password = ?";
+    $stmt = $pdo->prepare($sql);
+    
+    if ($stmt->execute([$hashedPassword])) {
+        $count = $stmt->rowCount();
+        echo "Successfully updated <strong>{$count}</strong> members.<br>";
+        echo "All member passwords are now set to: <strong>password</strong>";
+    } else {
+        echo "Failed to update members.";
     }
 
-    // Assign a random status to every member
-    // Using MySQL's ELT and RAND functions for efficient bulk randomization
-    $sql = "UPDATE members 
-            SET status = ELT(
-                FLOOR(RAND() * 6) + 1, 
-                'Active', 'Deceased', 'Delisted', 'On-Hold', 'Overdue', 'Under Litigation'
-            )";
-
-    $db->exec($sql);
-    
-    $db->commit();
-    echo "Seed completed successfully: All members randomized.\n";
-
-} catch (Exception $e) {
-    $db->rollBack();
-    echo "Error: " . $e->getMessage() . "\n";
+} catch (PDOException $e) {
+    die("Database Error: " . $e->getMessage());
 }

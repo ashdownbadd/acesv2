@@ -11,42 +11,60 @@ class Auth
         $this->db = $database->connect();
     }
 
-    private function updateSession(array $user): void
+    /**
+     * Set session variables based on user type
+     */
+    private function updateSession(array $user, string $type): void
     {
-        $_SESSION['user_id']  = $user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['name']     = $user['name'];
-        $_SESSION['role']     = 'admin';
-        $_SESSION['avatar']   = $user['avatar'];
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if ($type === 'admin') {
+            $_SESSION['user_id']   = $user['id'];
+            $_SESSION['username']  = $user['username'];
+            $_SESSION['name']      = $user['name'] ?? $user['username'];
+            $_SESSION['role']      = 'admin';
+            $_SESSION['avatar']    = $user['avatar'] ?? '';
+        } else {
+            // Member Logic
+            $_SESSION['member_id'] = $user['id'];
+            $_SESSION['username']  = $user['username'];
+            // Combine names for members
+            $_SESSION['name']      = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+            $_SESSION['role']      = 'Member';
+            $_SESSION['avatar']    = $user['avatar'] ?? '';
+        }
     }
 
     public function login(string $username, string $password): bool
     {
+        // 1. Try Admin Table
         $stmt = $this->db->prepare("SELECT * FROM admin WHERE username = :u LIMIT 1");
         $stmt->execute(['u' => $username]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && password_verify($password, $user['password'])) {
-            $this->updateSession($user);
+        if ($admin && password_verify($password, $admin['password'])) {
+            $this->updateSession($admin, 'admin');
             return true;
         }
-        return false;
-    }
 
-    public function refreshSession(int $userId): void
-    {
-        $stmt = $this->db->prepare("SELECT * FROM admin WHERE id = :id LIMIT 1");
-        $stmt->execute(['id' => $userId]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        // 2. Try Members Table
+        $stmt = $this->db->prepare("SELECT * FROM members WHERE username = :u LIMIT 1");
+        $stmt->execute(['u' => $username]);
+        $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user) {
-            $this->updateSession($user);
+        if ($member && password_verify($password, $member['password'])) {
+            $this->updateSession($member, 'member');
+            return true;
         }
+
+        return false;
     }
 
     public function isLoggedIn(): bool
     {
-        return isset($_SESSION['user_id']);
+        return isset($_SESSION['user_id']) || isset($_SESSION['member_id']);
     }
 
     public function getRole(): ?string
@@ -56,6 +74,7 @@ class Auth
 
     public function logout(): void
     {
+        if (session_status() === PHP_SESSION_NONE) session_start();
         session_unset();
         session_destroy();
     }
