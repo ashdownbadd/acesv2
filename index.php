@@ -28,14 +28,38 @@ if ($action === 'logout') {
     exit();
 }
 
-// --- DATA ACTIONS ---
 if ($auth->isLoggedIn()) {
     $db = (new DB())->connect();
-    $userId = $_SESSION['user_id'] ?? $_SESSION['member_id']; // Handle both session types
+    $userId = $_SESSION['user_id'] ?? $_SESSION['member_id'];
     $isAdmin = ($_SESSION['role'] ?? '') === 'admin';
     $isMember = ($_SESSION['role'] ?? '') === 'member';
 
-    // ... (Your existing update_profile, delete_member, and save_member logic stays here)
+    // Handle Member Credentials Update
+    if ($action === 'update_member_credentials' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $newUsername = $_POST['username'] ?? '';
+        $newPassword = $_POST['password'] ?? '';
+        $memberId = $_SESSION['member_id'] ?? 0;
+
+        if ($memberId > 0 && !empty($newUsername)) {
+            try {
+                if (!empty($newPassword)) {
+                    // Update both Username and Password (Hashed)
+                    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                    $stmt = $db->prepare("UPDATE members SET username = ?, password = ? WHERE id = ?");
+                    $stmt->execute([$newUsername, $hashedPassword, $memberId]);
+                } else {
+                    // Update Username only
+                    $stmt = $db->prepare("UPDATE members SET username = ? WHERE id = ?");
+                    $stmt->execute([$newUsername, $memberId]);
+                }
+
+                header("Location: index.php?status=success");
+            } catch (PDOException $e) {
+                header("Location: index.php?status=error");
+            }
+            exit();
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
