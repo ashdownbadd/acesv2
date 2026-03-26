@@ -1,103 +1,330 @@
-/* Add this to your assets/css/profile.css */
+/* ─── Scoped to #mp-root ─────────────────────────────────────────── */
+#mp-root {
+  padding-top: 100px;
+  padding-bottom: 60px;
+  font-family: var(--font-main);
+}
 
-.l-settings-wrapper {
-  max-width: 900px;
+#mp-root .mp-page {
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 clamp(12px, 4vw, 28px);
 }
 
-.c-settings-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-}
-
-.c-bento-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 24px;
-}
-
-.c-bento-card--avatar {
-  background: var(--gold);
-  border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1 1 280px;
-}
-
-.c-avatar-wrapper {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 160px;
-}
-
-.c-avatar-img.c-avatar-placeholder {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-}
-
-.c-avatar-name {
-  margin-top: 16px;
-  font-size: 1.4rem;
-  font-weight: 700;
-  font-family: var(--font-heading);
-}
-
-.c-settings-label {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  color: var(--t3);
-  letter-spacing: 0.1em;
-}
-
-.c-settings-input {
-  padding: 8px 16px;
-  height: 38px;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  width: 100%;
-  outline: none;
-}
-
-.c-settings-submit {
+/* ─── Toast ──────────────────────────────────────────────────────── */
+#mp-root .mp-toast {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 38px;
-  padding: 0 24px;
-  border-radius: 50px;
-  border: none;
-  font-size: 0.85rem;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ok);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+}
+#mp-root .mp-toast::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
+}
+
+/* ─── Header row ─────────────────────────────────────────────────── */
+#mp-root .mp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ─── Section label — matches amortization .section-label ────────── */
+#mp-root .mp-section-label {
+  font-family: var(--font-heading);
+  font-size: clamp(9px, 1vw, 10px);
   font-weight: 700;
-  background: var(--bg); /* Dark button text on gold bg, or vice versa */
-  color: var(--gold);
-  cursor: pointer;
-  border: 1px solid var(--gold);
-  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+#mp-root .mp-section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
 }
 
-.c-settings-submit:hover {
-  background: var(--gold);
-  color: var(--bg);
+/* ─── Base card — matches amortization .card ─────────────────────── */
+#mp-root .mp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px);
 }
 
-.c-bento-card--details {
+/* ─── Two-column layout ──────────────────────────────────────────── */
+#mp-root .mp-grid {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+#mp-root .mp-right {
   display: flex;
   flex-direction: column;
-  flex: 2 1 400px;
+  gap: 12px;
+}
+
+/* ─── Identity sidebar ───────────────────────────────────────────── */
+#mp-root .mp-identity {
+  background: var(--raised);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: sticky;
+  top: 90px;
+}
+
+#mp-root .mp-avatar {
+  width: 76px;
+  height: 76px;
+  background: var(--gold);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 1.9rem;
+  font-weight: 800;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+#mp-root .mp-identity__name {
+  font-family: var(--font-heading);
+  font-size: clamp(13px, 1.5vw, 15px);
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+
+#mp-root .mp-identity__id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--t3);
+  margin-bottom: 16px;
+}
+
+#mp-root .mp-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 14px;
+}
+
+#mp-root .mp-pill-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+#mp-root .mp-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 12px;
+}
+
+#mp-root .mp-pill__label {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--t3);
+}
+
+#mp-root .mp-pill__val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ─── Balance ────────────────────────────────────────────────────── */
+#mp-root .mp-balance-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+#mp-root .mp-currency {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+#mp-root .mp-amount {
+  font-family: var(--font-mono);
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+#mp-root .mp-subtext {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--t3);
+  margin-top: 6px;
+}
+
+/* ─── Fields & Inputs — matches amortization inputs ─────────────── */
+#mp-root .mp-field label {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--t3);
+  margin-bottom: 6px;
+}
+
+#mp-root .mp-input {
+  width: 100%;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(6px, 1vw, 8px) 12px;
+  color: var(--text);
+  font-family: var(--font-main);
+  font-size: clamp(12px, 1.3vw, 13px);
+  outline: none;
+  appearance: none;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+#mp-root .mp-input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+#mp-root .mp-input:not(:disabled):focus {
+  border-color: var(--gold);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+#mp-root .mp-input::placeholder {
+  color: var(--t3);
+}
+
+/* ─── Form helpers ───────────────────────────────────────────────── */
+#mp-root .mp-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+#mp-root .mp-mt {
+  margin-top: 12px;
+}
+
+/* ─── Buttons — matches amortization .btn-export / .btn-save ─────── */
+#mp-root .mp-btn-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(5px, 1vw, 7px) clamp(12px, 1.5vw, 18px);
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--t2);
+  font-family: var(--font-main);
+  font-size: clamp(10px, 1.1vw, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+#mp-root .mp-btn-edit:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+#mp-root .mp-btn-edit--active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+
+#mp-root .mp-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(5px, 1vw, 7px) clamp(12px, 1.5vw, 18px);
+  border-radius: 6px;
+  border: none;
+  background: var(--gold);
+  color: #fff;
+  font-family: var(--font-main);
+  font-size: clamp(10px, 1.1vw, 11px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    filter 0.2s,
+    transform 0.15s;
+  white-space: nowrap;
+}
+#mp-root .mp-btn-save:hover {
+  filter: brightness(1.08);
+}
+#mp-root .mp-btn-save:active {
+  transform: scale(0.98);
+}
+
+#mp-root .mp-save-bar {
+  display: none;
+  justify-content: flex-end;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  #mp-root .mp-grid {
+    grid-template-columns: 1fr;
+  }
+  #mp-root .mp-identity {
+    position: static;
+  }
+  #mp-root .mp-row-2 {
+    grid-template-columns: 1fr;
+  }
 }

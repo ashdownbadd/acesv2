@@ -1,5 +1,5 @@
 <?php
-// Database is already connected in index.php as $db
+// Database connection inherited from index.php
 $memberId = $_SESSION['member_id'] ?? 0;
 
 $stmt = $db->prepare("SELECT * FROM members WHERE id = ?");
@@ -10,98 +10,163 @@ if (!$m) {
     die("Member record not found.");
 }
 
-$status = $_GET['status'] ?? '';
-$initial  = strtoupper(substr($m['first_name'] ?? 'U', 0, 1));
-$fullName = htmlspecialchars(trim(($m['first_name'] ?? '') . ' ' . ($m['last_name'] ?? '')));
-$memberIdDisplay = str_pad($m['id'] ?? 0, 5, '0', STR_PAD_LEFT);
+$status_msg      = $_GET['status'] ?? '';
+$initial         = strtoupper(substr($m['first_name'] ?? 'U', 0, 1));
+$fullName        = htmlspecialchars(trim(($m['first_name'] ?? '') . ' ' . ($m['last_name'] ?? '')));
+$memberIdDisplay = str_pad($m['id'] ?? 0, 4, '0', STR_PAD_LEFT);
 ?>
 
-<div class="l-container" style="padding-top: 110px; padding-bottom: 60px;">
-    <main class="l-settings-wrapper">
 
-        <?php if ($status === 'success'): ?>
-            <div style="background: var(--ok); color: #fff; padding: 1rem; border-radius: 50px; margin-bottom: 24px; font-family: var(--font-heading); font-weight: 700; text-align: center; font-size: 0.85rem;">
-                CHANGES SAVED SUCCESSFULLY
+<div id="mp-root">
+    <div class="mp-page">
+
+        <!-- Top bar -->
+        <div class="mp-topbar">
+            <div>
+                <?php if ($status_msg === 'success'): ?>
+                    <span class="mp-toast">Changes saved</span>
+                <?php endif; ?>
             </div>
-        <?php endif; ?>
+            <button type="button" id="mp-edit-btn" class="mp-btn-edit">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit Profile
+            </button>
+        </div>
 
-        <div class="c-settings-grid">
+        <form id="mp-form" action="index.php?action=update_member_credentials" method="POST">
+            <div class="mp-grid">
 
-            <div class="c-bento-card c-bento-card--avatar" style="color: white;">
-                <div class="c-avatar-wrapper">
-                    <div class="c-avatar-img c-avatar-placeholder" style="display: flex; background: rgba(255,255,255,0.2); font-family: var(--font-heading); font-size: 3rem; font-weight: 800; color: white; border: 3px solid white;">
-                        <?= $initial ?>
+                <!-- ── Identity sidebar ── -->
+                <div class="mp-card mp-identity">
+                    <div class="mp-avatar"><?= $initial ?></div>
+                    <div class="mp-identity__name"><?= $fullName ?></div>
+                    <div class="mp-identity__id">#<?= $memberIdDisplay ?></div>
+                    <div class="mp-divider"></div>
+                    <div class="mp-pill-row">
+                        <div class="mp-pill">
+                            <span class="mp-pill__label">Type</span>
+                            <span class="mp-pill__val"><?= htmlspecialchars($m['membership_type'] ?? 'Regular') ?></span>
+                        </div>
+                        <div class="mp-pill">
+                            <span class="mp-pill__label">Status</span>
+                            <span class="mp-pill__val"><?= htmlspecialchars($m['status'] ?? 'Active') ?></span>
+                        </div>
                     </div>
                 </div>
 
-                <h2 class="c-avatar-name" style="color: white;"><?= $fullName ?></h2>
-                <p class="c-avatar-id" style="color: white; opacity: 0.9;">ID: #<?= $memberIdDisplay ?></p>
+                <!-- ── Right column ── -->
+                <div class="mp-right">
 
-                <div style="width: 100%; height: 1px; background: rgba(255,255,255,0.2); margin: 20px 0;"></div>
-
-                <div style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
-                        <span style="opacity: 0.8; font-weight: 700;">TYPE</span>
-                        <span style="font-weight: 800;"><?= strtoupper($m['membership_type'] ?? 'REGULAR') ?></span>
+                    <!-- Financial Overview -->
+                    <div class="mp-card">
+                        <div class="mp-section-label">Financial Overview</div>
+                        <div class="mp-balance-wrap">
+                            <span class="mp-currency">₱</span>
+                            <span class="mp-amount"><?= number_format($m['balance'] ?? 0, 2) ?></span>
+                        </div>
+                        <div class="mp-subtext">Current outstanding balance</div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
-                        <span style="opacity: 0.8; font-weight: 700;">STATUS</span>
-                        <span style="font-weight: 800;"><?= htmlspecialchars($m['civil_status'] ?? '—') ?></span>
-                    </div>
-                </div>
-            </div>
 
-            <div class="c-bento-card c-bento-card--details">
-
-                <div class="c-settings-section" style="margin-bottom: 32px;">
-                    <label class="c-settings-label">Financial Overview</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
-                        <div style="background: var(--bg); border: 1px solid var(--border); padding: 16px; border-radius: 18px;">
-                            <span class="c-settings-label" style="font-size: 0.55rem;">Total Balance</span>
-                            <div style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: var(--gold); margin-top: 4px;">
-                                ₱<?= number_format($m['balance'] ?? 0, 2) ?>
+                    <!-- Account Access -->
+                    <div class="mp-card">
+                        <div class="mp-section-label">Account Access</div>
+                        <div class="mp-row-2">
+                            <div class="mp-field">
+                                <label>Username</label>
+                                <input type="text" name="username" class="mp-input mp-editable"
+                                    value="<?= htmlspecialchars($m['username'] ?? '') ?>"
+                                    autocomplete="username" disabled required>
+                            </div>
+                            <div class="mp-field">
+                                <label>New Password</label>
+                                <input type="password" name="password" class="mp-input mp-editable"
+                                    placeholder="Leave blank to keep current"
+                                    autocomplete="new-password" disabled>
                             </div>
                         </div>
-                        <div style="background: var(--bg); border: 1px solid var(--border); padding: 16px; border-radius: 18px;">
-                            <span class="c-settings-label" style="font-size: 0.55rem;">Account Status</span>
-                            <div style="margin-top: 8px;">
-                                <span style="background: var(--gold-dim); color: var(--gold); padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; border: 1px solid var(--gold);">
-                                    <?= strtoupper($m['status'] ?? 'ACTIVE') ?>
-                                </span>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="mp-card">
+                        <div class="mp-section-label">Contact Information</div>
+                        <div class="mp-field">
+                            <label>Email Address</label>
+                            <input type="email" name="email" class="mp-input mp-editable"
+                                value="<?= htmlspecialchars($m['email'] ?? '') ?>" disabled>
+                        </div>
+                        <div class="mp-row-2 mp-mt">
+                            <div class="mp-field">
+                                <label>Mobile 1</label>
+                                <input type="text" name="phone_number" class="mp-input mp-editable"
+                                    value="<?= htmlspecialchars($m['phone_number'] ?? '') ?>" disabled>
+                            </div>
+                            <div class="mp-field">
+                                <label>Mobile 2</label>
+                                <input type="text" name="phone_number_2" class="mp-input mp-editable"
+                                    value="<?= htmlspecialchars($m['phone_number_2'] ?? '') ?>" disabled>
+                            </div>
+                        </div>
+                        <div class="mp-row-2 mp-mt">
+                            <div class="mp-field">
+                                <label>Landline 1</label>
+                                <input type="text" name="telephone_number" class="mp-input mp-editable"
+                                    value="<?= htmlspecialchars($m['telephone_number'] ?? '') ?>" disabled>
+                            </div>
+                            <div class="mp-field">
+                                <label>Landline 2</label>
+                                <input type="text" name="telephone_number_2" class="mp-input mp-editable"
+                                    value="<?= htmlspecialchars($m['telephone_number_2'] ?? '') ?>" disabled>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <form action="index.php?action=update_member_credentials" method="POST" class="c-settings-section">
-                    <label class="c-settings-label">Account Access</label>
-
-                    <div style="margin-top: 8px;">
-                        <label class="c-settings-label">Username</label>
-                        <input type="text" name="username" class="c-settings-input"
-                            value="<?= htmlspecialchars($m['username'] ?? '') ?>" required>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div>
-                            <label class="c-settings-label">New Password</label>
-                            <input type="password" name="password" class="c-settings-input" placeholder="••••••••">
-                        </div>
-                        <div>
-                            <label class="c-settings-label">Confirm Password</label>
-                            <input type="password" name="confirm_password" class="c-settings-input" placeholder="••••••••">
+                    <!-- Home Address -->
+                    <div class="mp-card">
+                        <div class="mp-section-label">Home Address</div>
+                        <div class="mp-field">
+                            <input type="text" name="address" class="mp-input mp-editable"
+                                value="<?= htmlspecialchars($m['address'] ?? '') ?>" disabled>
                         </div>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
-                        <button type="submit" class="c-settings-submit">
-                            Save Changes
+                    <!-- Save bar -->
+                    <div id="mp-save-bar" class="mp-save-bar">
+                        <button type="submit" class="mp-btn-save">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Confirm &amp; Save
                         </button>
                     </div>
-                </form>
 
-            </div>
+                </div><!-- /mp-right -->
+            </div><!-- /mp-grid -->
+        </form>
 
-        </div>
-    </main>
+    </div>
 </div>
+
+<script>
+    (function() {
+        const editBtn = document.getElementById('mp-edit-btn');
+        const saveBar = document.getElementById('mp-save-bar');
+        const editables = document.querySelectorAll('#mp-root .mp-editable');
+        let editing = false;
+
+        const iconEdit = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+        const iconCancel = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+        editBtn.addEventListener('click', function() {
+            editing = !editing;
+            editBtn.innerHTML = editing ? `${iconCancel} Cancel` : `${iconEdit} Edit Profile`;
+            editBtn.classList.toggle('mp-btn-edit--active', editing);
+            saveBar.style.display = editing ? 'flex' : 'none';
+            editables.forEach(el => {
+                el.disabled = !editing;
+            });
+        });
+    })();
+</script>

@@ -34,31 +34,42 @@ if ($auth->isLoggedIn()) {
     $isAdmin = ($_SESSION['role'] ?? '') === 'admin';
     $isMember = ($_SESSION['role'] ?? '') === 'member';
 
-    // Handle Member Credentials Update
     if ($action === 'update_member_credentials' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $newUsername = $_POST['username'] ?? '';
-        $newPassword = $_POST['password'] ?? '';
         $memberId = $_SESSION['member_id'] ?? 0;
 
-        if ($memberId > 0 && !empty($newUsername)) {
-            try {
-                if (!empty($newPassword)) {
-                    // Update both Username and Password (Hashed)
-                    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                    $stmt = $db->prepare("UPDATE members SET username = ?, password = ? WHERE id = ?");
-                    $stmt->execute([$newUsername, $hashedPassword, $memberId]);
-                } else {
-                    // Update Username only
-                    $stmt = $db->prepare("UPDATE members SET username = ? WHERE id = ?");
-                    $stmt->execute([$newUsername, $memberId]);
-                }
+        $fields = [
+            'username' => $_POST['username'],
+            'email' => $_POST['email'],
+            'phone_number' => $_POST['phone_number'],
+            'phone_number_2' => $_POST['phone_number_2'],
+            'telephone_number' => $_POST['telephone_number'],
+            'telephone_number_2' => $_POST['telephone_number_2'],
+            'address' => $_POST['address']
+        ];
 
-                header("Location: index.php?status=success");
-            } catch (PDOException $e) {
-                header("Location: index.php?status=error");
+        try {
+            if (!empty($_POST['password'])) {
+                $fields['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+                $sql = "UPDATE members SET username=:username, email=:email, 
+                    phone_number=:phone_number, phone_number_2=:phone_number_2, 
+                    telephone_number=:telephone_number, telephone_number_2=:telephone_number_2, 
+                    address=:address, password=:password WHERE id=:id";
+            } else {
+                $sql = "UPDATE members SET username=:username, email=:email, 
+                    phone_number=:phone_number, phone_number_2=:phone_number_2, 
+                    telephone_number=:telephone_number, telephone_number_2=:telephone_number_2, 
+                    address=:address WHERE id=:id";
             }
-            exit();
+
+            $stmt = $db->prepare($sql);
+            $fields['id'] = $memberId;
+            $stmt->execute($fields);
+
+            header("Location: index.php?status=success");
+        } catch (PDOException $e) {
+            header("Location: index.php?status=error");
         }
+        exit();
     }
 }
 ?>
