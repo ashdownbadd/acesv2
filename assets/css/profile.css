@@ -1,13 +1,11 @@
 /* ─── Scoped to #mp-root ─────────────────────────────────────────── */
 #mp-root {
-  padding-top: 100px;
-  padding-bottom: 60px;
   font-family: var(--font-main);
 }
 
 #mp-root .mp-page {
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 24px auto 0; /* Changed 0 to 24px for that top gap */
   padding: 0 clamp(12px, 4vw, 28px);
 }
 
@@ -224,10 +222,6 @@
   font-size: clamp(12px, 1.3vw, 13px);
   outline: none;
   appearance: none;
-  transition:
-    border-color 0.2s,
-    background 0.2s,
-    box-shadow 0.2s;
 }
 
 #mp-root .mp-input:disabled {
@@ -271,7 +265,6 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s;
   white-space: nowrap;
 }
 #mp-root .mp-btn-edit:hover {
@@ -299,11 +292,8 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition:
-    filter 0.2s,
-    transform 0.15s;
-  white-space: nowrap;
 }
+
 #mp-root .mp-btn-save:hover {
   filter: brightness(1.08);
 }
