@@ -780,14 +780,21 @@ if ($memberId > 0) {
       background: var(--raised);
     }
 
+    /* --- 1. Screen Behavior (Prevents ghosting on the UI) --- */
+    @media screen {
+      #soa-print-section {
+        display: none !important;
+      }
+    }
+
+    /* --- 2. Print Behavior (The Word Document Layout) --- */
     @media print {
 
-      /* Hide the entire application UI */
+      /* Hide everything except the SOA container */
       body>*:not(#soa-print-section) {
         display: none !important;
       }
 
-      /* Force the SOA section to be visible only for the printer */
       #soa-print-section {
         display: block !important;
         visibility: visible !important;
@@ -797,21 +804,55 @@ if ($memberId > 0) {
         width: 100%;
         color: #000 !important;
         background: #fff !important;
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+        line-height: 1.5;
+      }
+
+      /* Table Styling for Professional Document */
+      .soa-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      .soa-table th {
+        background-color: #f8f9fa !important;
+        border-bottom: 2px solid #333;
+        padding: 12px 8px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: right;
+      }
+
+      .soa-table td {
+        border-bottom: 1px solid #eee;
+        padding: 10px 8px;
+        font-size: 11px;
+        text-align: right;
+      }
+
+      /* Alignment & Accents */
+      .soa-table .text-left {
+        text-align: left;
+      }
+
+      .soa-table .penalty-cell {
+        color: #c0392b !important;
+        font-weight: bold;
+      }
+
+      /* Remove URL/Header/Footer added by browsers */
+      @page {
+        margin: 1.5cm;
       }
     }
 
+    /* --- 3. Dashboard UI Elements --- */
     .no-print {
       display: none !important;
     }
 
-    .card,
-    .table-card {
-      border: 1px solid #eee !important;
-      box-shadow: none !important;
-    }
-
-
-    /* UI Button Style */
     .btn-soa {
       background: var(--raised);
       border: 1px solid var(--border);
@@ -824,11 +865,18 @@ if ($memberId > 0) {
       align-items: center;
       gap: 8px;
       transition: all 0.2s;
+      font-family: var(--font-main);
     }
 
     .btn-soa:hover {
       background: var(--gold-dim);
       border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* Icons within the button */
+    .btn-soa svg {
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -2008,82 +2056,90 @@ if ($memberId > 0) {
 
     function generateSOA() {
       if (!PHP_LOAN_DATA) {
-        alert("No loan record found to generate a statement.");
+        alert("No loan record found.");
         return;
       }
 
       const loan = PHP_LOAN_DATA.loan;
       const sched = PHP_LOAN_DATA.schedule;
 
-      // 1. Create the container
+      // Create container
       const printArea = document.createElement('div');
       printArea.id = 'soa-print-section';
-
-      // Keep it hidden from your actual browser screen
-      printArea.style.display = 'none';
       document.body.appendChild(printArea);
 
       const formatter = new Intl.NumberFormat('en-PH', {
         style: 'currency',
-        currency: 'PHP'
+        currency: 'PHP',
+        minimumFractionDigits: 2
       });
 
-      // 2. Build the Content (Ensure color is explicitly black for printing)
+      // Build Content
       printArea.innerHTML = `
-        <div style="text-align:center; margin-bottom: 30px; font-family: 'Syne', sans-serif; color: #000;">
-            <h2 style="margin:0; color:#f59b0a;">ACES STATEMENT OF ACCOUNT</h2>
-            <p style="font-size:12px; color:#666;">Automated Cooperative Entry System</p>
+        <div style="text-align:center; margin-bottom: 30px;">
+            <h1 style="margin:0; font-size: 24px; color: #f59b0a;">ACES STATEMENT OF ACCOUNT</h1>
+            <p style="font-size:12px; color:#555;">Generated on ${new Date().toLocaleDateString()}</p>
         </div>
         
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:40px; margin-bottom:30px; font-size:13px; color:#000;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 15px;">
             <div>
-                <strong>BORROWER DETAILS</strong><br>
-                Name: ${PHP_MEMBER_NAME}<br>
-                Member ID: #${String(loan.member_id).padStart(5, '0')}<br>
-                Loan Type: ${loan.loan_type}
+                <strong>BORROWER:</strong> ${PHP_MEMBER_NAME}<br>
+                <strong>MEMBER ID:</strong> #${String(loan.member_id).padStart(5, '0')}<br>
+                <strong>LOAN TYPE:</strong> ${loan.loan_type}
             </div>
             <div style="text-align:right;">
-                <strong>LOAN SUMMARY</strong><br>
-                Principal: ${formatter.format(loan.principal_amount)}<br>
-                Interest Rate: ${loan.interest_rate}%<br>
-                Term: ${loan.terms_months} Months
+                <strong>PRINCIPAL:</strong> ${formatter.format(loan.principal_amount)}<br>
+                <strong>INTEREST RATE:</strong> ${loan.interest_rate}%<br>
+                <strong>TERM:</strong> ${loan.terms_months} Months
             </div>
         </div>
 
-        <table style="width:100%; border-collapse:collapse; font-size:11px; color:#000;">
+        <table class="soa-table">
             <thead>
-                <tr style="background:#f9f9f9; border-bottom:2px solid #000;">
-                    <th style="padding:10px; text-align:left;">Period</th>
-                    <th style="padding:10px; text-align:right;">Principal</th>
-                    <th style="padding:10px; text-align:right;">Interest</th>
-                    <th style="padding:10px; text-align:right;">Due Amount</th>
-                    <th style="padding:10px; text-align:right;">Balance</th>
-                    <th style="padding:10px; text-align:center;">Status</th>
+                <tr>
+                    <th class="text-left">Period</th>
+                    <th class="text-left">Due Date</th>
+                    <th>Principal</th>
+                    <th>Interest</th>
+                    <th>Monthly Due</th>
+                    <th>Penalty</th>
+                    <th>Remaining</th>
                 </tr>
             </thead>
             <tbody>
-                ${sched.map(row => `
-                    <tr style="border-bottom: 1px solid #000;">
-                        <td style="padding:8px;">${row.period} (${row.due_date})</td>
-                        <td style="padding:8px; text-align:right;">${formatter.format(row.principal)}</td>
-                        <td style="padding:8px; text-align:right;">${formatter.format(row.interest)}</td>
-                        <td style="padding:8px; text-align:right;">${formatter.format(row.payment)}</td>
-                        <td style="padding:8px; text-align:right;">${formatter.format(row.rem_principal)}</td>
-                        <td style="padding:8px; text-align:center; font-weight:bold;">${row.status.toUpperCase()}</td>
-                    </tr>
-                `).join('')}
+                ${sched.map(row => {
+                    const pVal = parseFloat(row.penalty || 0);
+                    const monthlyDue = parseFloat(row.principal) + parseFloat(row.interest);
+                    
+                    return `
+                    <tr>
+                        <td class="text-left">${row.period}</td>
+                        <td class="text-left">${row.due_date}</td>
+                        <td>${formatter.format(row.principal)}</td>
+                        <td>${formatter.format(row.interest)}</td>
+                        <td>${formatter.format(monthlyDue)}</td>
+                        <td class="penalty-cell">${pVal > 0 ? formatter.format(pVal) : ''}</td>
+                        <td>${formatter.format(row.rem_principal)}</td>
+                    </tr>`;
+                }).join('')}
             </tbody>
         </table>
+
+        <div style="margin-top: 50px; font-size: 10px; text-align: center; color: #999;">
+            *** This is a computer-generated document from the ACES v3 Financial System ***
+        </div>
     `;
 
-      // 3. Trigger Print
+      // Trigger Print
       window.print();
 
-      // 4. Cleanup immediately after print dialog closes
-      setTimeout(() => {
+      // Cleanup: Remove the element after the dialog is closed
+      window.addEventListener('afterprint', () => {
         printArea.remove();
-      }, 100);
-    } 
+      }, {
+        once: true
+      });
+    }
   </script>
 
 </body>
