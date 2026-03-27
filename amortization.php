@@ -779,6 +779,57 @@ if ($memberId > 0) {
     .theme-toggle:hover {
       background: var(--raised);
     }
+
+    @media print {
+
+      /* Hide the entire application UI */
+      body>*:not(#soa-print-section) {
+        display: none !important;
+      }
+
+      /* Force the SOA section to be visible only for the printer */
+      #soa-print-section {
+        display: block !important;
+        visibility: visible !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: #000 !important;
+        background: #fff !important;
+      }
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    .card,
+    .table-card {
+      border: 1px solid #eee !important;
+      box-shadow: none !important;
+    }
+
+
+    /* UI Button Style */
+    .btn-soa {
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-soa:hover {
+      background: var(--gold-dim);
+      border-color: var(--gold);
+    }
   </style>
 </head>
 
@@ -981,6 +1032,14 @@ if ($memberId > 0) {
               <rect x="2" y="11" width="12" height="3" rx="1" />
             </svg>
             Export CSV
+          </button>
+
+          <button type="button" class="btn-soa" onclick="generateSOA()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <path d="M6 14h12v8H6z" />
+            </svg>
+            Print Statement of Account
           </button>
           <button class="btn-save" onclick="saveToDB()">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1904,6 +1963,8 @@ if ($memberId > 0) {
       }
     }
 
+
+
     loadFromServer();
 
     // Load existing loan data if member was passed from dashboard
@@ -1944,6 +2005,85 @@ if ($memberId > 0) {
         });
       }
     });
+
+    function generateSOA() {
+      if (!PHP_LOAN_DATA) {
+        alert("No loan record found to generate a statement.");
+        return;
+      }
+
+      const loan = PHP_LOAN_DATA.loan;
+      const sched = PHP_LOAN_DATA.schedule;
+
+      // 1. Create the container
+      const printArea = document.createElement('div');
+      printArea.id = 'soa-print-section';
+
+      // Keep it hidden from your actual browser screen
+      printArea.style.display = 'none';
+      document.body.appendChild(printArea);
+
+      const formatter = new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP'
+      });
+
+      // 2. Build the Content (Ensure color is explicitly black for printing)
+      printArea.innerHTML = `
+        <div style="text-align:center; margin-bottom: 30px; font-family: 'Syne', sans-serif; color: #000;">
+            <h2 style="margin:0; color:#f59b0a;">ACES STATEMENT OF ACCOUNT</h2>
+            <p style="font-size:12px; color:#666;">Automated Cooperative Entry System</p>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:40px; margin-bottom:30px; font-size:13px; color:#000;">
+            <div>
+                <strong>BORROWER DETAILS</strong><br>
+                Name: ${PHP_MEMBER_NAME}<br>
+                Member ID: #${String(loan.member_id).padStart(5, '0')}<br>
+                Loan Type: ${loan.loan_type}
+            </div>
+            <div style="text-align:right;">
+                <strong>LOAN SUMMARY</strong><br>
+                Principal: ${formatter.format(loan.principal_amount)}<br>
+                Interest Rate: ${loan.interest_rate}%<br>
+                Term: ${loan.terms_months} Months
+            </div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; font-size:11px; color:#000;">
+            <thead>
+                <tr style="background:#f9f9f9; border-bottom:2px solid #000;">
+                    <th style="padding:10px; text-align:left;">Period</th>
+                    <th style="padding:10px; text-align:right;">Principal</th>
+                    <th style="padding:10px; text-align:right;">Interest</th>
+                    <th style="padding:10px; text-align:right;">Due Amount</th>
+                    <th style="padding:10px; text-align:right;">Balance</th>
+                    <th style="padding:10px; text-align:center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sched.map(row => `
+                    <tr style="border-bottom: 1px solid #000;">
+                        <td style="padding:8px;">${row.period} (${row.due_date})</td>
+                        <td style="padding:8px; text-align:right;">${formatter.format(row.principal)}</td>
+                        <td style="padding:8px; text-align:right;">${formatter.format(row.interest)}</td>
+                        <td style="padding:8px; text-align:right;">${formatter.format(row.payment)}</td>
+                        <td style="padding:8px; text-align:right;">${formatter.format(row.rem_principal)}</td>
+                        <td style="padding:8px; text-align:center; font-weight:bold;">${row.status.toUpperCase()}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+      // 3. Trigger Print
+      window.print();
+
+      // 4. Cleanup immediately after print dialog closes
+      setTimeout(() => {
+        printArea.remove();
+      }, 100);
+    } 
   </script>
 
 </body>
