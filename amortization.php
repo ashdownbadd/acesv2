@@ -879,6 +879,7 @@ if ($memberId > 0) {
       opacity: 0.8;
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -1082,12 +1083,15 @@ if ($memberId > 0) {
             Export CSV
           </button>
 
-          <button type="button" class="btn-soa" onclick="generateSOA()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-              <path d="M6 14h12v8H6z" />
+          <button type="button" class="btn-soa" onclick="exportSOAExcel()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="8" y1="13" x2="16" y2="13" />
+              <line x1="8" y1="17" x2="16" y2="17" />
+              <line x1="8" y1="9" x2="10" y2="9" />
             </svg>
-            Print Statement of Account
+            Export SOA (Excel)
           </button>
           <button class="btn-save" onclick="saveToDB()">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1125,7 +1129,6 @@ if ($memberId > 0) {
 
     <!-- Payment Ledger -->
     <div id="ledger_section" style="display:none;margin-top:var(--gap)">
-      <div class="section-label">Payment ledger</div>
       <div class="table-card">
         <div class="table-card__head">
           <span class="table-card__title">Recorded payments</span>
@@ -2054,91 +2057,249 @@ if ($memberId > 0) {
       }
     });
 
-    function generateSOA() {
-      if (!PHP_LOAN_DATA) {
-        alert("No loan record found.");
+    function exportSOAExcel() {
+      if (!PHP_LOAN_DATA || !PHP_LOAN_DATA.loan) {
+        alert("No loan record found. Please save the loan to the database first.");
         return;
       }
 
       const loan = PHP_LOAN_DATA.loan;
-      const sched = PHP_LOAN_DATA.schedule;
+      const sched = PHP_LOAN_DATA.schedule || [];
 
-      // Create container
-      const printArea = document.createElement('div');
-      printArea.id = 'soa-print-section';
-      document.body.appendChild(printArea);
+      // ── Helpers ──────────────────────────────────────────────────
+      function fmt(n) {
+        const v = parseFloat(n) || 0;
+        return v === 0 ? '-' : v.toLocaleString('en-PH', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
 
-      const formatter = new Intl.NumberFormat('en-PH', {
-        style: 'currency',
-        currency: 'PHP',
-        minimumFractionDigits: 2
+      function fmtDate(d) {
+        if (!d) return '-';
+        const dt = new Date(d);
+        return dt.toLocaleDateString('en-PH', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }).replace(/\//g, '/');
+      }
+
+      function addMonths(dateStr, n) {
+        if (!dateStr) return null;
+        const d = new Date(dateStr);
+        d.setMonth(d.getMonth() + n);
+        return d;
+      }
+
+      const today = new Date();
+      const asOfLabel = today.toLocaleDateString('en-PH', {
+        day: '2-digit',
+        month: 'short',
+        year: '2-digit'
+      }).replace(/ /g, '-');
+      const dateReleased = loan.start_date ? fmtDate(loan.start_date) : '-';
+      const maturityDate = loan.start_date ? fmtDate(addMonths(loan.start_date, parseInt(loan.terms_months) || 0)) : '-';
+
+      const principal = parseFloat(loan.principal_amount) || 0;
+      const totalInterest = parseFloat(loan.total_interest) || 0;
+      const loanNotes = principal + totalInterest;
+      const periodicAmort = parseFloat(loan.monthly_amortization) || 0;
+
+      // Compute months-past-due per row from saved rem data
+      function monthsPastDue(dueDateStr) {
+        if (!dueDateStr) return 0;
+        const due = new Date(dueDateStr);
+        due.setHours(0, 0, 0, 0);
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        if (due >= now) return 0;
+        const mo = (now.getFullYear() - due.getFullYear()) * 12 + (now.getMonth() - due.getMonth());
+        return Math.max(1, mo);
+      }
+
+      // Build worksheet data as array of arrays
+      const WS = [];
+
+      // ── Row 1: Title + as-of ──────────────────────────────────────
+      WS.push(['STATEMENT OF ACCOUNT', '', '', '', '', '', 'as of', asOfLabel, '']);
+
+      // ── Row 2: blank ─────────────────────────────────────────────
+      WS.push([]);
+
+      // ── Rows 3–10: info block (left) + summary (right) ───────────
+      const infoLeft = [
+        ['Name:', PHP_MEMBER_NAME || '-'],
+        ['Member ID', String(loan.member_id || '').padStart(4, '0')],
+        ['Term', loan.terms_months || '-'],
+        ['Payment Frequency', loan.mf_freq ? (loan.mf_freq === 'bi-monthly' ? '2' : loan.mf_freq === 'weekly' ? '4' : '1') : '1'],
+        ['Interest Rate/annum', (parseFloat(loan.interest_rate) || 0).toFixed(2) + '%'],
+        ['Date Released', dateReleased],
+        ['Maturity Date', maturityDate],
+        ['Loan ID', loan.id || '-'],
+      ];
+      const infoRight = [
+        ['Principal', fmt(principal)],
+        ['Interest', fmt(totalInterest)],
+        ['Service Charges', '-'],
+        ['Non-finance charges', '-'],
+        ['Loan Notes Receivable', fmt(loanNotes)],
+        ['Periodic Amortization', fmt(periodicAmort)],
+      ];
+
+      for (let i = 0; i < 8; i++) {
+        const left = infoLeft[i] || ['', ''];
+        const right = infoRight[i] || ['', ''];
+        // col A=label, B=value, C=blank, D=blank, E=blank, F=right-label, G=right-value
+        WS.push([left[0], left[1], '', '', '', right[0], right[1]]);
+      }
+
+      // ── Blank row ────────────────────────────────────────────────
+      WS.push([]);
+
+      // ── Column headers ────────────────────────────────────────────
+      WS.push([
+        'Due Date', 'Principal', 'Interest', 'Total Amount Due',
+        'Payments', 'Months past due', 'Principal', 'Interest', 'Penalty (3%)'
+      ]);
+
+      // ── Data rows ─────────────────────────────────────────────────
+      let totPrincipal = 0,
+        totInterest = 0,
+        totAmountDue = 0,
+        totPayments = 0;
+      let totOverduePrin = 0,
+        totOverdueInt = 0,
+        totPenalty = 0;
+
+      const DATA_START = WS.length + 1; // 1-indexed for Excel
+
+      sched.forEach(row => {
+        const pp = parseFloat(row.principal) || 0;
+        const int = parseFloat(row.interest) || 0;
+        const amtDue = pp + int;
+        const isPaid = row.status === 'paid';
+        const payment = isPaid ? amtDue : 0;
+        const mo = (row.status === 'overdue') ? monthsPastDue(row.due_date) : 0;
+        const remPen = parseFloat(row.rem_penalty) || 0;
+        const overduePrin = (row.status === 'overdue') ? (parseFloat(row.rem_principal) || 0) : 0;
+        const overdueInt = (row.status === 'overdue') ? (parseFloat(row.rem_interest) || 0) : 0;
+
+        totPrincipal += pp;
+        totInterest += int;
+        totAmountDue += amtDue;
+        totPayments += payment;
+        totOverduePrin += overduePrin;
+        totOverdueInt += overdueInt;
+        totPenalty += remPen;
+
+        WS.push([
+          row.due_date || '-',
+          fmt(pp),
+          fmt(int),
+          fmt(amtDue),
+          isPaid ? fmt(payment) : '-',
+          mo > 0 ? mo : '-',
+          overduePrin > 0 ? fmt(overduePrin) : '-',
+          overdueInt > 0 ? fmt(overdueInt) : '-',
+          remPen > 0 ? fmt(remPen) : '-',
+        ]);
       });
 
-      // Build Content
-      printArea.innerHTML = `
-        <div style="text-align:center; margin-bottom: 30px;">
-            <h1 style="margin:0; font-size: 24px; color: #f59b0a;">ACES STATEMENT OF ACCOUNT</h1>
-            <p style="font-size:12px; color:#555;">Generated on ${new Date().toLocaleDateString()}</p>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; border-bottom: 1px solid #000; padding-bottom: 15px;">
-            <div>
-                <strong>BORROWER:</strong> ${PHP_MEMBER_NAME}<br>
-                <strong>MEMBER ID:</strong> #${String(loan.member_id).padStart(5, '0')}<br>
-                <strong>LOAN TYPE:</strong> ${loan.loan_type}
-            </div>
-            <div style="text-align:right;">
-                <strong>PRINCIPAL:</strong> ${formatter.format(loan.principal_amount)}<br>
-                <strong>INTEREST RATE:</strong> ${loan.interest_rate}%<br>
-                <strong>TERM:</strong> ${loan.terms_months} Months
-            </div>
-        </div>
+      // ── Totals row ────────────────────────────────────────────────
+      WS.push([
+        'Total',
+        fmt(totPrincipal),
+        fmt(totInterest),
+        fmt(totAmountDue),
+        fmt(totPayments),
+        '',
+        fmt(totOverduePrin),
+        fmt(totOverdueInt),
+        fmt(totPenalty),
+      ]);
 
-        <table class="soa-table">
-            <thead>
-                <tr>
-                    <th class="text-left">Period</th>
-                    <th class="text-left">Due Date</th>
-                    <th>Principal</th>
-                    <th>Interest</th>
-                    <th>Monthly Due</th>
-                    <th>Penalty</th>
-                    <th>Remaining</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${sched.map(row => {
-                    const pVal = parseFloat(row.penalty || 0);
-                    const monthlyDue = parseFloat(row.principal) + parseFloat(row.interest);
-                    
-                    return `
-                    <tr>
-                        <td class="text-left">${row.period}</td>
-                        <td class="text-left">${row.due_date}</td>
-                        <td>${formatter.format(row.principal)}</td>
-                        <td>${formatter.format(row.interest)}</td>
-                        <td>${formatter.format(monthlyDue)}</td>
-                        <td class="penalty-cell">${pVal > 0 ? formatter.format(pVal) : ''}</td>
-                        <td>${formatter.format(row.rem_principal)}</td>
-                    </tr>`;
-                }).join('')}
-            </tbody>
-        </table>
+      // ── Grand total row ───────────────────────────────────────────
+      const grandTotal = totOverduePrin + totOverdueInt + totPenalty;
+      WS.push([
+        'Grand Total (Principal + Interest + Penalty)',
+        '', '', '', '', '',
+        fmt(totOverduePrin + totOverdueInt),
+        '',
+        fmt(grandTotal),
+      ]);
 
-        <div style="margin-top: 50px; font-size: 10px; text-align: center; color: #999;">
-            *** This is a computer-generated document from the ACES v3 Financial System ***
-        </div>
-    `;
+      // ── Notes / footer ────────────────────────────────────────────
+      WS.push([]);
+      WS.push(['Notes:', '', '', '', '', '', '', '', '']);
+      WS.push(['*', '', '', '', '', '', '', '', '']);
+      WS.push([]);
+      WS.push(['Total Receivables', '', '', '', 'Total Outstanding', '', '', '', '']);
 
-      // Trigger Print
-      window.print();
+      // ── Build workbook ────────────────────────────────────────────
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(WS);
 
-      // Cleanup: Remove the element after the dialog is closed
-      window.addEventListener('afterprint', () => {
-        printArea.remove();
-      }, {
-        once: true
-      });
+      // ── Column widths ─────────────────────────────────────────────
+      ws['!cols'] = [{
+          wch: 16
+        }, // Due Date
+        {
+          wch: 14
+        }, // Principal
+        {
+          wch: 14
+        }, // Interest
+        {
+          wch: 18
+        }, // Total Amount Due
+        {
+          wch: 14
+        }, // Payments
+        {
+          wch: 16
+        }, // Months past due
+        {
+          wch: 14
+        }, // Principal (overdue)
+        {
+          wch: 14
+        }, // Interest (overdue)
+        {
+          wch: 14
+        }, // Penalty
+      ];
+
+      // ── Merges ────────────────────────────────────────────────────
+      ws['!merges'] = [
+        // Title: A1:E1
+        {
+          s: {
+            r: 0,
+            c: 0
+          },
+          e: {
+            r: 0,
+            c: 4
+          }
+        },
+        // Grand total label: A last-total-row spanning cols 0-5
+        {
+          s: {
+            r: WS.length - 6,
+            c: 0
+          },
+          e: {
+            r: WS.length - 6,
+            c: 5
+          }
+        },
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Statement of Account');
+
+      const memberSlug = (PHP_MEMBER_NAME || 'member').replace(/\s+/g, '-').toLowerCase();
+      XLSX.writeFile(wb, `SOA_${memberSlug}_${asOfLabel}.xlsx`);
     }
   </script>
 
