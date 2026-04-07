@@ -11,29 +11,14 @@ require_once 'core/db.php';
 $pdo = (new DB())->connect();
 
 // 1. AUTHENTICATION & NAVBAR DATA MAPPING
-$userId = $_SESSION['user_id'] ?? 0;
-$user = [];
+// We trust the session data already established in index.php
+$user = [
+  'name'   => $_SESSION['name'] ?? 'Admin',
+  'role'   => $_SESSION['role'] ?? 'Staff',
+  'avatar' => $_SESSION['avatar'] ?? ''
+];
 
-if ($userId > 0) {
-  // Fetch from your 'admin' table
-  $uStmt = $pdo->prepare("SELECT * FROM admin WHERE id = ?");
-  $uStmt->execute([$userId]);
-  $dbUser = $uStmt->fetch(PDO::FETCH_ASSOC);
-
-  if ($dbUser) {
-    $user = $dbUser;
-    // Map 'username' to 'name' so navbar.php doesn't throw a warning
-    $user['name'] = $dbUser['username'] ?? 'Admin';
-    $user['role'] = $dbUser['role'] ?? 'Staff';
-    $user['avatar'] = $dbUser['avatar'] ?? '';
-  }
-}
-
-// Fallback to prevent any undefined key errors in the partial
-if (empty($user)) {
-  $user = ['name' => 'Guest', 'role' => 'Viewer', 'avatar' => ''];
-}
-
+// Check if the role is admin (case-insensitive)
 $isAdmin = (strtolower($user['role']) === 'admin');
 
 // ============================================================
@@ -666,37 +651,6 @@ if ($memberId > 0) {
       font-weight: 700;
     }
 
-    .btn-export {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: clamp(5px, 1vw, 7px) clamp(10px, 1.5vw, 14px);
-      border-radius: 6px;
-      border: 1px solid var(--border2);
-      background: var(--surface);
-      color: var(--t2);
-      font-family: var(--font-main);
-      font-size: clamp(10px, 1.1vw, 11px);
-      font-weight: 600;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .btn-export:hover:not(:disabled) {
-      background: var(--raised);
-      color: var(--text);
-    }
-
-    .btn-export:active:not(:disabled) {
-      transform: scale(.98);
-    }
-
-    .btn-export:disabled {
-      opacity: .3;
-      cursor: not-allowed;
-    }
 
     .btn-save {
       display: inline-flex;
@@ -854,18 +808,21 @@ if ($memberId > 0) {
     }
 
     .btn-soa {
-      background: var(--raised);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
+      gap: 6px;
+      padding: clamp(5px, 1vw, 7px) clamp(10px, 1.5vw, 14px);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--raised);
+      color: var(--text);
       font-family: var(--font-main);
+      font-size: clamp(10px, 1.1vw, 11px);
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
     .btn-soa:hover {
@@ -1075,14 +1032,6 @@ if ($memberId > 0) {
         <span class="table-card__title">Amortization table</span>
         <div style="display:flex;align-items:center;gap:10px">
           <span class="table-badge" id="row_count">No data</span>
-          <button class="btn-export" id="export_btn" onclick="exportCSV()" disabled>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 2v8M5 7l3 3 3-3" />
-              <rect x="2" y="11" width="12" height="3" rx="1" />
-            </svg>
-            Export CSV
-          </button>
-
           <button type="button" class="btn-soa" onclick="exportSOAExcel()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -1773,7 +1722,6 @@ if ($memberId > 0) {
         resultSub.textContent = "Updates automatically";
         tbody.innerHTML = `<tr class="empty-row"><td colspan="${colSpan}">Enter loan details to generate the schedule</td></tr>`;
         document.getElementById("row_count").textContent = "No data";
-        document.getElementById("export_btn").disabled = true;
         document.getElementById("summary_strip").classList.add("hidden");
         rowStatuses = {};
         updateOverduePanel();
@@ -1892,34 +1840,8 @@ if ($memberId > 0) {
         document.getElementById("s_rate_label").textContent = "Fixed Principal";
         document.getElementById("s_months_label").textContent = "Term length";
       }
-      document.getElementById("export_btn").disabled = false;
       document.getElementById("summary_strip").classList.remove("hidden");
       updateOverduePanel();
-    }
-
-    function exportCSV() {
-      const p = document.getElementById("principal").value,
-        r = document.getElementById("interest").value,
-        m = document.getElementById("months").value,
-        t = document.getElementById("loan_type").value;
-      const headers = [...document.querySelectorAll("#table_head_row th")].map(th => th.innerText.trim());
-      const rows = [headers];
-      document.querySelectorAll("#sched_body tr:not(.empty-row)").forEach(tr => {
-        rows.push([...tr.querySelectorAll("td")].map(td => {
-          const s = td.querySelector("select");
-          return s ? s.value : td.innerText.replace(/[₱,]/g, "").trim();
-        }));
-      });
-      const csv = rows.map(r => r.join(",")).join("\n");
-      const blob = new Blob([csv], {
-          type: "text/csv"
-        }),
-        url = URL.createObjectURL(blob),
-        a = document.createElement("a");
-      a.href = url;
-      a.download = `amortization_${t.replace(/\s+/g,"-")}_${p}_${r}pct_${m}mo.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
     }
 
     function toggleTheme() {
