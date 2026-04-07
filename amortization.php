@@ -1944,11 +1944,9 @@ if ($memberId > 0) {
     loadFromDb();
 
     document.addEventListener('DOMContentLoaded', function() {
-      // 1. THEME TOGGLE (Dark Mode)
+      // 1. THEME TOGGLE
       const themeToggle = document.getElementById('theme-toggle');
       const htmlEl = document.documentElement;
-
-      // Check for saved user preference
       const savedTheme = localStorage.getItem('theme') || 'light';
       htmlEl.setAttribute('data-theme', savedTheme);
 
@@ -1956,28 +1954,44 @@ if ($memberId > 0) {
         themeToggle.addEventListener('click', () => {
           const currentTheme = htmlEl.getAttribute('data-theme');
           const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-
           htmlEl.setAttribute('data-theme', newTheme);
           localStorage.setItem('theme', newTheme);
         });
       }
 
-      // 2. PROFILE DROPDOWN
-      const profilePill = document.querySelector('.c-navbar__profile');
-      const dropdown = document.querySelector('.c-navbar__dropdown');
+      // 2. USER CHIP DROPDOWN
+      const userChip = document.getElementById('user-chip');
+      const chipDrop = document.getElementById('chip-drop');
 
-      if (profilePill && dropdown) {
-        profilePill.addEventListener('click', function(e) {
+      if (userChip && chipDrop) {
+        userChip.addEventListener('click', function(e) {
+          // Prevent the click from bubbling up to the document
           e.stopPropagation();
-          dropdown.classList.toggle('is-active');
+
+          // Toggle visibility
+          const isVisible = chipDrop.style.display === 'block';
+          chipDrop.style.display = isVisible ? 'none' : 'block';
+
+          // Also toggle a class in case your CSS uses it for animations
+          chipDrop.classList.toggle('is-active');
         });
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function() {
-          dropdown.classList.remove('is-active');
+        // Close dropdown when clicking anywhere else on the screen
+        document.addEventListener('click', function(e) {
+          if (!userChip.contains(e.target)) {
+            chipDrop.style.display = 'none';
+            chipDrop.classList.remove('is-active');
+          }
         });
       }
     });
+
+    // 3. LOGOUT HANDLER
+    function confirmLogout() {
+      if (confirm("Are you sure you want to sign out?")) {
+        window.location.href = 'index.php?action=logout';
+      }
+    }
 
     function exportSOAExcel() {
       if (!PHP_LOAN_DATA || !PHP_LOAN_DATA.loan) {
