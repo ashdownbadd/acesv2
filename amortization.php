@@ -992,39 +992,6 @@ if ($memberId > 0) {
     </div>
 
     <!-- Payment Summary Panel -->
-    <div id="overdue_panel" style="display:none;margin-bottom:var(--gap)">
-      <div class="section-label">Payment summary — application of payment</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
-        <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--raised);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
-            <div>
-              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--font-heading);margin-bottom:3px">Total Principal</div>
-              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)" id="od_total_principal">₱0.00</div>
-            </div>
-            <div>
-              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--font-heading);margin-bottom:3px">Total Interest</div>
-              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)" id="od_total_interest">₱0.00</div>
-            </div>
-            <div id="od_penalty_wrap" style="display:none">
-              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);font-family:var(--font-heading);margin-bottom:3px">
-                Total Penalty
-                <span id="od_overdue_badge" style="display:none;font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(217,61,61,0.1);color:var(--danger);border:1px solid rgba(217,61,61,0.2);margin-left:4px;vertical-align:middle"></span>
-              </div>
-              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--danger)" id="od_total_penalty">₱0.00</div>
-            </div>
-            <div style="border-left:1px solid var(--border);padding-left:24px">
-              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);font-family:var(--font-heading);margin-bottom:3px">Grand Total Due</div>
-              <div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text)" id="od_grand_total">₱0.00</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <input type="number" id="od_amount_paid" placeholder="Enter amount paid" style="background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none;width:200px">
-            <button onclick="applyGlobalPayment()" style="padding:8px 14px;border-radius:6px;border:none;background:var(--gold);color:#fff;font-family:var(--font-main);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Apply</button>
-          </div>
-        </div>
-        <div id="od_breakdown" style="padding:12px 18px;font-size:12px;color:var(--t3);font-family:var(--font-main)">Enter an amount above to see how it will be applied.</div>
-      </div>
-    </div>
 
     <!-- Amortization Table -->
     <div class="table-card">
@@ -1040,7 +1007,7 @@ if ($memberId > 0) {
               <line x1="8" y1="17" x2="16" y2="17" />
               <line x1="8" y1="9" x2="10" y2="9" />
             </svg>
-            Export SOA
+            Export SOA (Excel)
           </button>
           <button class="btn-save" onclick="saveToDB()">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1048,7 +1015,7 @@ if ($memberId > 0) {
               <path d="M10 2v4H5V2" />
               <path d="M4 9h8" />
             </svg>
-            Save
+            Save to DB
           </button>
         </div>
       </div>
@@ -1108,6 +1075,41 @@ if ($memberId > 0) {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- Payment Summary Panel -->
+    <div id="overdue_panel" style="display:none;margin-top:var(--gap)">
+      <div class="section-label">Application of Payment</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--raised);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+            <div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--font-heading);margin-bottom:3px">Total Principal</div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)" id="od_total_principal">₱0.00</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);font-family:var(--font-heading);margin-bottom:3px">Total Interest</div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)" id="od_total_interest">₱0.00</div>
+            </div>
+            <div id="od_penalty_wrap" style="display:none">
+              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--danger);font-family:var(--font-heading);margin-bottom:3px">
+                Total Penalty
+                <span id="od_overdue_badge" style="display:none;font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(217,61,61,0.1);color:var(--danger);border:1px solid rgba(217,61,61,0.2);margin-left:4px;vertical-align:middle"></span>
+              </div>
+              <div style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--danger)" id="od_total_penalty">₱0.00</div>
+            </div>
+            <div style="border-left:1px solid var(--border);padding-left:24px">
+              <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);font-family:var(--font-heading);margin-bottom:3px">Grand Total Due</div>
+              <div style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text)" id="od_grand_total">₱0.00</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="number" id="od_amount_paid" placeholder="Enter amount paid" style="background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none;width:200px">
+            <button onclick="applyGlobalPayment()" style="padding:8px 14px;border-radius:6px;border:none;background:var(--gold);color:#fff;font-family:var(--font-main);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Apply</button>
+          </div>
+        </div>
+        <div id="od_breakdown" style="padding:12px 18px;font-size:12px;color:var(--t3);font-family:var(--font-main)">Enter an amount above to see how it will be applied.</div>
       </div>
     </div>
 
