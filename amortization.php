@@ -152,6 +152,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
       }
       break;
 
+    case 'save_real_property':
+      try {
+        $rp = $body['real_property'];
+        $loan_id = intval($rp['loan_id']);
+
+        // Upsert — delete existing then insert fresh
+        $pdo->prepare("DELETE FROM loan_real_property WHERE loan_id = ?")->execute([$loan_id]);
+        $stmt = $pdo->prepare("
+          INSERT INTO loan_real_property
+            (loan_id, tct_number, tax_declaration_number, rpt_status,
+             doc_undertaking, doc_assignment_deed, doc_original_title)
+          VALUES
+            (:loan_id, :tct_number, :tax_declaration_number, :rpt_status,
+             :doc_undertaking, :doc_assignment_deed, :doc_original_title)
+        ");
+        $stmt->execute($rp);
+        echo json_encode(['success' => true]);
+      } catch (Exception $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+      }
+      break;
+
+    case 'load_real_property':
+      try {
+        $loan_id = intval($body['loan_id']);
+        $stmt = $pdo->prepare("SELECT * FROM loan_real_property WHERE loan_id = ? LIMIT 1");
+        $stmt->execute([$loan_id]);
+        echo json_encode($stmt->fetch() ?: null);
+      } catch (Exception $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+      }
+      break;
+
     default:
       http_response_code(400);
       echo json_encode(['error' => 'Unknown action']);
@@ -182,10 +215,13 @@ if ($memberId > 0) {
       $sStmt->execute([$loanRow['id']]);
       $pStmt = $pdo->prepare("SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY paid_at");
       $pStmt->execute([$loanRow['id']]);
+      $rpStmt = $pdo->prepare("SELECT * FROM loan_real_property WHERE loan_id = ? LIMIT 1");
+      $rpStmt->execute([$loanRow['id']]);
       $existingLoan = [
-        'loan'     => $loanRow,
-        'schedule' => $sStmt->fetchAll(),
-        'payments' => $pStmt->fetchAll(),
+        'loan'          => $loanRow,
+        'schedule'      => $sStmt->fetchAll(),
+        'payments'      => $pStmt->fetchAll(),
+        'real_property' => $rpStmt->fetch() ?: null,
       ];
     }
   } catch (PDOException $e) {
@@ -835,6 +871,91 @@ if ($memberId > 0) {
     .btn-soa svg {
       opacity: 0.8;
     }
+
+    .rp-doc-select {
+      appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2px 22px 2px 8px;
+      font-family: var(--font-main);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      outline: none;
+      background-color: var(--raised);
+      color: var(--t2);
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23888' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      flex-shrink: 0;
+    }
+
+    .rp-submitted {
+      background-color: rgba(39, 168, 88, 0.1) !important;
+      color: var(--ok) !important;
+      border-color: rgba(39, 168, 88, 0.3) !important;
+    }
+
+    .rp-missing {
+      background-color: rgba(217, 61, 61, 0.08) !important;
+      color: var(--danger) !important;
+      border-color: rgba(217, 61, 61, 0.25) !important;
+    }
+
+    .rp-pending {
+      background-color: var(--raised) !important;
+      color: var(--t2) !important;
+      border-color: var(--border) !important;
+    }
+
+    .am-back {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--t3);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-family: var(--font-main);
+    }
+
+    .am-back:hover {
+      background: var(--raised);
+    }
+
+    .rp-upload-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      background: var(--raised);
+      color: var(--t2);
+      font-family: var(--font-main);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .rp-upload-label:hover {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+      color: var(--gold);
+    }
+
+    .rp-upload-label.rp-has-file {
+      border-style: solid;
+      border-color: var(--ok);
+      background: rgba(39, 168, 88, 0.06);
+      color: var(--ok);
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -844,10 +965,7 @@ if ($memberId > 0) {
   <?php include 'views/auth/partials/navbar.php'; ?>
 
   <div class="page">
-    <a href="index.php?page=dashboard"
-      style="font-size:11px;font-weight:600;color:var(--t3);text-decoration:none;display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-family:var(--font-main);"
-      onmouseover="this.style.background='var(--raised)'"
-      onmouseout="this.style.background=''">
+    <a href="index.php?page=dashboard" class="am-back">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M10 12L6 8l4-4" />
       </svg>
@@ -919,7 +1037,69 @@ if ($memberId > 0) {
       </div>
     </div>
 
-    <!-- Row 2 -->
+    <!-- Row 1b: Real Property Details (conditional) -->
+    <div class="row" id="rp_section" style="display:none">
+      <div class="section-label">Real Property Collateral Details</div>
+      <div class="grid-4">
+
+        <div class="card">
+          <div class="card__label">TCT No.</div>
+          <input type="text" id="rp_tct" placeholder="e.g. TCT-12345"
+            style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--font-main);font-size:13px;outline:none;">
+        </div>
+
+        <div class="card">
+          <div class="card__label">Tax Declaration No.</div>
+          <input type="text" id="rp_tax_decl" placeholder="e.g. TD-2025-00123"
+            style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--font-main);font-size:13px;outline:none;">
+        </div>
+
+        <div class="card">
+          <div class="card__label">Real Property Payments</div>
+          <select id="rp_rpt_status"
+            style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--font-main);font-size:13px;outline:none;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27 viewBox=%270 0 12 8%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%23a09a91%27 stroke-width=%271.5%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer">
+            <option value="" disabled selected>— Select —</option>
+            <option value="Updated">Updated</option>
+            <option value="Not Updated">Not Updated</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="card__label">Document Checklist</div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+
+            <div>
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-family:var(--font-heading);margin-bottom:5px">Undertaking</div>
+              <label class="rp-upload-label" id="lbl_undertaking">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span id="name_undertaking">Upload PDF</span>
+                <input type="file" id="rp_doc_undertaking" accept="application/pdf" style="display:none" onchange="rpFileChange('undertaking', this)">
+              </label>
+            </div>
+
+            <div>
+              <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-family:var(--font-heading);margin-bottom:5px">Assignment of Deed of Rights</div>
+              <label class="rp-upload-label" id="lbl_assignment_deed">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span id="name_assignment_deed">Upload PDF</span>
+                <input type="file" id="rp_doc_assignment_deed" accept="application/pdf" style="display:none" onchange="rpFileChange('assignment_deed', this)">
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
     <div class="row">
       <div class="section-label">Figures</div>
       <div class="grid-5">
@@ -1351,6 +1531,14 @@ if ($memberId > 0) {
       }
 
       currentLoanId = result.loan_id;
+
+      // Save real property details if collateral is Real Property
+      if (document.getElementById('collateral').value === 'Real Property') {
+        const rpResult = await api('save_real_property', {
+          real_property: getRpData(currentLoanId)
+        });
+        if (rpResult.error) console.warn('RP save warning:', rpResult.error);
+      }
 
       // Save payment ledger entries that haven't been saved yet
       for (const entry of paymentLedger) {
@@ -1936,9 +2124,66 @@ if ($memberId > 0) {
         });
         renderLedger();
       }
+
+      // Restore real property data
+      if (SERVER_DATA.real_property) loadRpData(SERVER_DATA.real_property);
     }
 
 
+
+    // ── Real Property ─────────────────────────────────────────────────
+    const RP_DOC_IDS = ['rp_doc_undertaking', 'rp_doc_assignment_deed'];
+
+    function updateDocSelectColor(sel) {
+      sel.classList.remove('rp-submitted', 'rp-missing', 'rp-pending');
+      if (sel.value === 'Submitted') sel.classList.add('rp-submitted');
+      else if (sel.value === 'Missing') sel.classList.add('rp-missing');
+      else sel.classList.add('rp-pending');
+    }
+
+    function initRpSelects() {
+      RP_DOC_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        updateDocSelectColor(el);
+        el.addEventListener('change', () => updateDocSelectColor(el));
+      });
+    }
+    initRpSelects();
+
+    // Show/hide RP section when collateral changes
+    document.getElementById('collateral').addEventListener('change', function() {
+      const show = this.value === 'Real Property';
+      document.getElementById('rp_section').style.display = show ? 'block' : 'none';
+    });
+
+    // Collect RP data for saving
+    function getRpData(loanId) {
+      return {
+        loan_id: loanId,
+        tct_number: document.getElementById('rp_tct').value.trim() || null,
+        tax_declaration_number: document.getElementById('rp_tax_decl').value.trim() || null,
+        rpt_status: document.getElementById('rp_rpt_status').value || 'Pending',
+        doc_undertaking: document.getElementById('rp_doc_undertaking').value || 'Pending',
+        doc_assignment_deed: document.getElementById('rp_doc_assignment_deed').value || 'Pending',
+      };
+    }
+
+    // Restore RP data from server
+    function loadRpData(rp) {
+      if (!rp) return;
+      const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val != null) el.value = val;
+      };
+      set('rp_tct', rp.tct_number);
+      set('rp_tax_decl', rp.tax_declaration_number);
+      set('rp_rpt_status', rp.rpt_status);
+      set('rp_doc_undertaking', rp.doc_undertaking);
+      set('rp_doc_assignment_deed', rp.doc_assignment_deed);
+      RP_DOC_IDS.forEach(id => updateDocSelectColor(document.getElementById(id)));
+      document.getElementById('rp_section').style.display = 'block';
+    }
 
     loadFromServer();
 
