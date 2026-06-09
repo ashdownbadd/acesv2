@@ -1,8 +1,5 @@
 <?php
 
-/**
- * ACESv3 - Loan Amortization & Payment Tracking
- */
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
@@ -110,6 +107,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
     }
     exit;
   }
+
+  // ── BAGONG DAGDAG: API ACTION HOOK PARA SA LEDGER PAYMENTS ──────────
+  if ($_GET['action'] === 'save_payment') {
+    try {
+      $pdo->beginTransaction();
+      $payment = $body['payment'];
+
+      // Tukuyin muna ang active loan_id ng pinatutungkulang miyembro
+      $loanStmt = $pdo->prepare("SELECT id FROM loans WHERE member_id = ? LIMIT 1");
+      $loanStmt->execute([$payment['member_id']]);
+      $loanId = $loanStmt->fetchColumn();
+
+      if (!$loanId) {
+        throw new Exception("Hindi mahanap ang aktibong loan record ng miyembrong ito upang lapatan ng bayad.");
+      }
+
+      // Isulat ang permanenteng breakdown record sa ledger entry tracking queue table natin
+      $stmt = $pdo->prepare("INSERT INTO loan_payments 
+        (loan_id, member_id, amount_paid, penalty_applied, interest_applied, principal_applied, excess_cash, remarks) 
+        VALUES (:loan_id, :member_id, :amount_paid, :penalty_applied, :interest_applied, :principal_applied, :excess_cash, :remarks)");
+
+      $stmt->execute([
+        ':loan_id'          => $loanId,
+        ':member_id'        => $payment['member_id'],
+        ':amount_paid'      => $payment['amount_paid'],
+        ':penalty_applied'   => $payment['penalty_applied'],
+        ':interest_applied'  => $payment['interest_applied'],
+        ':principal_applied' => $payment['principal_applied'],
+        ':excess_cash'       => $payment['excess_cash'],
+        ':remarks'          => $payment['remarks'] ?? null
+      ]);
+
+      $pdo->commit();
+      echo json_encode(['success' => true, 'message' => 'Ang bayad ay matagumpay na nailapat at naisulat sa database!']);
+    } catch (Exception $e) {
+      $pdo->rollBack();
+      echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+  }
 }
 
 // ── Member Context Mapping from GET ───────────────────────────────────
@@ -117,6 +154,7 @@ $memberId = intval($_GET['member_id'] ?? 0);
 $memberName = '';
 $existingLoan = null;
 $existingSchedule = [];
+$existingPayments = []; // Tagasalo ng records ng payments mula sa db lifecycle
 
 if ($memberId > 0) {
   try {
@@ -138,6 +176,11 @@ if ($memberId > 0) {
       $sStmt = $pdo->prepare("SELECT * FROM loan_schedules WHERE loan_id = ? ORDER BY period ASC");
       $sStmt->execute([$existingLoan['id']]);
       $existingSchedule = $sStmt->fetchAll(PDO::FETCH_ASSOC);
+
+      // 4. BAGONG DAGDAG: Basahin ang lahat ng dating transaction histories mula sa loan_payments storage
+      $pStmt = $pdo->prepare("SELECT * FROM loan_payments WHERE member_id = ? ORDER BY created_at ASC");
+      $pStmt->execute([$memberId]);
+      $existingPayments = $pStmt->fetchAll(PDO::FETCH_ASSOC);
     }
   } catch (PDOException $e) {
     // Silent recovery
@@ -150,7 +193,7 @@ if ($memberId > 0) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loan Amortization Setup</title>
+  <title>ACESv3</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Syne:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/main.css">
@@ -659,12 +702,12 @@ if ($memberId > 0) {
           <table id="schedule_table">
             <thead>
               <tr>
-                <th style="text-align: left;">Period</th>
-                <th>Due Date</th>
-                <th>Monthly Amortization</th>
-                <th>Principal Component</th>
-                <th>Interest Component</th>
-                <th>Remaining Principal</th>
+                <th>Period</th>
+                <th style="text-align: right;">Due Date</th>
+                <th>Total Amount Due</th>
+                <th>Principal</th>
+                <th>Interest</th>
+                <th>Penalty</th>
               </tr>
             </thead>
             <tbody id="schedule_body">
@@ -690,21 +733,143 @@ if ($memberId > 0) {
 
     <div class="row" style="margin-top: 40px;">
       <div class="section-label">Application of Payment Ledger System</div>
-      <div class="card" style="border-style: dashed; text-align: center; color: var(--t2); padding: 40px 20px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 12px; opacity: 0.5;">
-          <rect x="2" y="4" width="20" height="16" rx="2" />
-          <line x1="2" y1="10" x2="22" y2="10" />
-        </svg>
-        <span class="font-medium text-sm block mb-1">Payment Tracking Queue Operational Area</span>
-        <p class="text-xs text-gray-400 max-w-md mx-auto">Once the amortization schedule above is committed, individual transaction entries, transaction validations, receipts, and balancing ledgers clear through this workspace.</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap); align-items: start;">
+
+        <div style="display: flex; flex-direction: column; gap: var(--gap);">
+          <div class="card" style="background: #1e1e24; color: #fff; border-color: #2b2b36;">
+            <div class="card__label" style="color: rgba(255,255,255,0.4);">Current Outstanding Balances</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="opacity: 0.7;">Total Outstanding Principal:</span>
+                <span id="live_total_principal" style="font-family: var(--font-mono); font-weight: 600;">₱0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="opacity: 0.7;">Total Outstanding Interest:</span>
+                <span id="live_total_interest" style="font-family: var(--font-mono); font-weight: 600;">₱0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="opacity: 0.7;">Total Outstanding Penalty:</span>
+                <span id="live_total_penalty" style="font-family: var(--font-mono); font-weight: 600; color: #ff6b6b;">₱0.00</span>
+              </div>
+              <div style="border-top: 1px dashed rgba(255,255,255,0.2); margin-top: 5px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700;">
+                <span style="color: var(--gold);">Grand Total Due:</span>
+                <span id="live_grand_total" style="font-family: var(--font-mono); color: var(--gold);">₱0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__label">Post Member Payment</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
+              <div>
+                <label style="font-size: 11px; font-weight:600; color: var(--t2); display:block; margin-bottom:4px;">Amount Paid (₱)</label>
+                <input type="number" id="pay_amount_input" min="0.01" step="0.01" placeholder="0.00" style="background:#fff;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight:600; color: var(--t2); display:block; margin-bottom:4px;">Staff Remarks</label>
+                <input type="text" id="pay_remarks_input" placeholder="Optional transaction notes...">
+              </div>
+              <button type="button" class="c-btn-save" id="btn_apply_payment" style="margin-top: 5px; background: var(--ok); box-shadow: 0 4px 12px rgba(39,168,88,0.2);">
+                Apply Allocation Waterfall
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card" style="margin-top: 25px;">
+          <div class="table-card__head" style="background: var(--raised);">
+            <div class="table-card__title">📜 Official Payment Transaction History</div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 12px;">Date / Time</th>
+                  <th style="text-align: right;">Amount Paid</th>
+                  <th style="text-align: right;">Penalty Applied</th>
+                  <th style="text-align: right;">Interest Applied</th>
+                  <th style="text-align: right;">Principal Applied</th>
+                  <th style="text-align: right;">Excess Balance</th>
+                  <th style="text-align: left; padding-left: 15px;">Remarks / Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php if (empty($existingPayments)): ?>
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--t3); padding: 40px 10px;">
+                      No permanent payment transactions found in the database for this member.
+                    </td>
+                  </tr>
+                <?php else: ?>
+                  <?php foreach ($existingPayments as $pay): ?>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                      <td style="text-align: left; padding: 12px; font-family: monospace; color: var(--t2);">
+                        <?= date('M d, Y h:i A', strtotime($pay['created_at'])) ?>
+                      </td>
+                      <td style="text-align: right; font-weight: 600; color: var(--ok);">
+                        ₱<?= number_format($pay['amount_paid'], 2) ?>
+                      </td>
+                      <td style="text-align: right; color: var(--danger);">
+                        ₱<?= number_format($pay['penalty_applied'], 2) ?>
+                      </td>
+                      <td style="text-align: right; color: var(--gold);">
+                        ₱<?= number_format($pay['interest_applied'], 2) ?>
+                      </td>
+                      <td style="text-align: right; color: #4fa8ff;">
+                        ₱<?= number_format($pay['principal_applied'], 2) ?>
+                      </td>
+                      <td style="text-align: right; color: <?= $pay['excess_cash'] > 0 ? 'var(--gold)' : 'var(--t3)' ?>;">
+                        ₱<?= number_format($pay['excess_cash'], 2) ?>
+                      </td>
+                      <td style="text-align: left; padding-left: 15px; color: var(--t3); font-style: italic; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <?= htmlspecialchars($pay['remarks'] ?? 'None') ?>
+                      </td>
+                    </tr>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
+  </div>
+
+  </div>
+  </div>
   </div>
 
   <script>
     const SESSION_MEMBER_ID = <?= json_encode($memberId) ?>;
     const SAVED_LOAN_DATA = <?= json_encode($existingLoan) ?>;
     const SAVED_SCHEDULE_DATA = <?= json_encode($existingSchedule) ?>;
+
+    // 1. Direct and unmutated output from database array
+    const RAW_SERVER_PAYMENTS = <?= json_encode($existingPayments ?? []) ?>;
+
+    // 2. Map strictly with the exact properties that lines 375-390 of amortization-engine.js demands
+    const SAVED_PAYMENTS_DATA = RAW_SERVER_PAYMENTS.map(function(p) {
+      return {
+        // Essential raw properties for the JS matching loops
+        created_at: p.created_at,
+        amount_paid: parseFloat(p.amount_paid || 0),
+        penalty_applied: parseFloat(p.penalty_applied || 0),
+        interest_applied: parseFloat(p.interest_applied || 0),
+        principal_applied: parseFloat(p.principal_applied || 0),
+        excess_cash: parseFloat(p.excess_cash || 0),
+        remarks: p.remarks || '',
+
+        // Essential camelCase fallback aliases 
+        datetime: p.created_at,
+        amountPaid: parseFloat(p.amount_paid || 0),
+        penaltyApplied: parseFloat(p.penalty_applied || 0),
+        interestApplied: parseFloat(p.interest_applied || 0),
+        principalApplied: parseFloat(p.principal_applied || 0),
+        excess: parseFloat(p.excess_cash || 0)
+      };
+    });
   </script>
   <script src="assets/js/amortization-engine.js"></script>
 </body>
