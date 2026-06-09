@@ -659,7 +659,7 @@ if ($memberId > 0) {
             <input type="text" id="fee_processing" readonly value="₱0.00">
           </div>
           <div class="card">
-            <div class="card__label">Insurance Protection</div>
+            <div class="card__label">Insurance (Principal + 1000 x 1.2 / Terms)</div>
             <input type="text" id="fee_insurance" readonly value="₱0.00">
           </div>
           <div class="card">
