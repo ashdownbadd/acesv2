@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 25, 2026 at 09:05 AM
+-- Generation Time: Jun 10, 2026 at 09:06 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -41,7 +41,7 @@ CREATE TABLE `admin` (
 --
 
 INSERT INTO `admin` (`id`, `username`, `password`, `name`, `role_id`, `avatar`) VALUES
-(1, 'admin', '$2y$10$miFDXGsM0a7fkvK1ZSu9HuEZ6VMsQ74naJOy9U7Ep.UABOHBbJ0je', 'asian', 1, 'user_1_1773706311.jpg');
+(1, 'admin', '$2y$10$miFDXGsM0a7fkvK1ZSu9HuEZ6VMsQ74naJOy9U7Ep.UABOHBbJ0je', 'ash HAHAHA', 1, 'user_1_1773706311.jpg');
 
 -- --------------------------------------------------------
 
@@ -51,35 +51,52 @@ INSERT INTO `admin` (`id`, `username`, `password`, `name`, `role_id`, `avatar`) 
 
 CREATE TABLE `loans` (
   `id` int(11) NOT NULL,
-  `member_id` int(11) DEFAULT NULL,
-  `loan_type` varchar(50) NOT NULL,
-  `date_released` date DEFAULT NULL,
-  `collateral` varchar(100) DEFAULT NULL,
-  `soa_status` enum('Updated','Pending','Overdue') DEFAULT 'Pending',
-  `amort_type` enum('straight','diminishing','manual','microfinance') NOT NULL,
-  `mf_freq` enum('monthly','bi-monthly','weekly') DEFAULT NULL COMMENT 'Only for Micro-Finance Loan',
+  `member_id` int(11) NOT NULL,
+  `loan_type` varchar(100) NOT NULL,
+  `collateral` varchar(100) NOT NULL,
+  `soa_status` varchar(50) NOT NULL,
+  `amort_type` varchar(50) NOT NULL,
   `principal_amount` decimal(15,2) NOT NULL,
-  `interest_rate` decimal(5,2) NOT NULL COMMENT 'Stored as percentage e.g. 5.00 = 5%',
-  `terms_months` int(11) NOT NULL,
-  `start_date` date DEFAULT NULL,
-  `manual_payment` decimal(15,2) DEFAULT NULL COMMENT 'Only used when amort_type = manual',
-  `monthly_amortization` decimal(15,2) DEFAULT NULL,
-  `total_interest` decimal(15,2) DEFAULT NULL,
-  `total_payment` decimal(15,2) DEFAULT NULL,
-  `processing_fee` decimal(15,2) DEFAULT NULL,
-  `insurance` decimal(15,2) DEFAULT NULL,
-  `notarial_fee` decimal(15,2) DEFAULT 400.00,
-  `net_proceeds` decimal(15,2) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `interest_rate` decimal(5,2) NOT NULL,
+  `terms` int(11) NOT NULL,
+  `start_date` date NOT NULL,
+  `tct_no` varchar(100) DEFAULT NULL,
+  `tax_dec_no` varchar(100) DEFAULT NULL,
+  `rp_status` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `loans`
 --
 
-INSERT INTO `loans` (`id`, `member_id`, `loan_type`, `date_released`, `collateral`, `soa_status`, `amort_type`, `mf_freq`, `principal_amount`, `interest_rate`, `terms_months`, `start_date`, `manual_payment`, `monthly_amortization`, `total_interest`, `total_payment`, `processing_fee`, `insurance`, `notarial_fee`, `net_proceeds`, `created_at`, `updated_at`) VALUES
-(2, 1, 'Bridge Financing', NULL, 'Post-Dated Check', 'Updated', 'straight', NULL, 50000.00, 2.00, 12, '2026-01-01', NULL, 5166.67, 12000.00, 62000.00, 1000.00, 720.00, 400.00, 47880.00, '2026-03-23 07:44:18', '2026-03-23 07:44:18');
+INSERT INTO `loans` (`id`, `member_id`, `loan_type`, `collateral`, `soa_status`, `amort_type`, `principal_amount`, `interest_rate`, `terms`, `start_date`, `tct_no`, `tax_dec_no`, `rp_status`, `created_at`) VALUES
+(1, 1, 'Bridge Financing', 'Post-Dated Check', 'Updated', 'Straight-line', 30000.00, 2.00, 12, '2026-01-10', NULL, NULL, NULL, '2026-06-05 07:57:49'),
+(3, 3, 'Salary Loan', 'Real Property', 'Updated', 'Diminishing balance', 50000.00, 2.00, 12, '2026-02-04', '123456789', '123456789', 'Updated', '2026-06-10 00:35:55'),
+(4, 5, 'Salary Loan', 'Real Property', 'Updated', 'Straight-line', 300000.00, 2.00, 12, '2026-04-08', NULL, NULL, NULL, '2026-06-10 05:39:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_documents`
+--
+
+CREATE TABLE `loan_documents` (
+  `id` int(11) NOT NULL,
+  `loan_id` int(11) NOT NULL,
+  `doc_type` varchar(50) NOT NULL COMMENT 'undertaking | deed_assignment',
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL COMMENT 'Relative path from project root',
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `loan_documents`
+--
+
+INSERT INTO `loan_documents` (`id`, `loan_id`, `doc_type`, `file_name`, `file_path`, `uploaded_at`) VALUES
+(1, 3, 'undertaking', 'undertaking_1781051788.pdf', 'uploads/loan_documents/3/undertaking_1781051788.pdf', '2026-06-10 00:36:28'),
+(2, 3, 'deed_assignment', 'deed_assignment_1781051755.pdf', 'uploads/loan_documents/3/deed_assignment_1781051755.pdf', '2026-06-10 00:35:55');
 
 -- --------------------------------------------------------
 
@@ -90,25 +107,53 @@ INSERT INTO `loans` (`id`, `member_id`, `loan_type`, `date_released`, `collatera
 CREATE TABLE `loan_payments` (
   `id` int(11) NOT NULL,
   `loan_id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
   `amount_paid` decimal(15,2) NOT NULL,
-  `penalty_applied` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `interest_applied` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `principal_applied` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `excess` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `payment_type` enum('Global','Per-Row') NOT NULL DEFAULT 'Global',
+  `penalty_applied` decimal(15,2) DEFAULT 0.00,
+  `interest_applied` decimal(15,2) DEFAULT 0.00,
+  `principal_applied` decimal(15,2) DEFAULT 0.00,
+  `excess_cash` decimal(15,2) DEFAULT 0.00,
   `remarks` text DEFAULT NULL,
-  `paid_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `loan_payments`
 --
 
-INSERT INTO `loan_payments` (`id`, `loan_id`, `amount_paid`, `penalty_applied`, `interest_applied`, `principal_applied`, `excess`, `payment_type`, `remarks`, `paid_at`) VALUES
-(3, 2, 155.00, 155.00, 0.00, 0.00, 0.00, 'Global', NULL, '2026-03-23 07:44:18'),
-(4, 2, 155.00, 155.00, 0.00, 0.00, 0.00, 'Global', NULL, '2026-03-23 07:44:18'),
-(5, 2, 47880.00, 0.00, 12000.00, 35880.00, 0.00, 'Global', NULL, '2026-03-23 07:44:18'),
-(6, 2, 5166.67, 0.00, 0.00, 5166.67, 0.00, 'Global', NULL, '2026-03-23 07:44:18');
+INSERT INTO `loan_payments` (`id`, `loan_id`, `member_id`, `amount_paid`, `penalty_applied`, `interest_applied`, `principal_applied`, `excess_cash`, `remarks`, `created_at`) VALUES
+(4, 1, 1, 930.00, 930.00, 0.00, 0.00, 0.00, '', '2026-06-09 02:03:41'),
+(5, 1, 1, 7200.00, 0.00, 7200.00, 0.00, 0.00, '', '2026-06-09 02:07:37'),
+(7, 1, 1, 21000.00, 0.00, 0.00, 21000.00, 0.00, 'galit', '2026-06-09 02:14:35'),
+(8, 1, 1, 90.00, 0.00, 0.00, 90.00, 0.00, '', '2026-06-09 03:16:44'),
+(10, 1, 1, 910.00, 0.00, 0.00, 910.00, 0.00, '', '2026-06-09 06:10:29'),
+(11, 1, 1, 93.00, 93.00, 0.00, 0.00, 0.00, '', '2026-06-10 00:32:09'),
+(12, 3, 3, 992.88, 992.88, 0.00, 0.00, 0.00, '', '2026-06-10 00:36:19'),
+(13, 1, 1, 8000.00, 0.00, 0.00, 8000.00, 0.00, '', '2026-06-10 02:04:39');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_real_property_details`
+--
+
+CREATE TABLE `loan_real_property_details` (
+  `id` int(11) NOT NULL,
+  `loan_id` int(11) NOT NULL,
+  `tct_no` varchar(100) DEFAULT NULL COMMENT 'Transfer Certificate of Title number',
+  `tax_dec_no` varchar(100) DEFAULT NULL COMMENT 'Tax Declaration number',
+  `property_payments` varchar(50) DEFAULT NULL COMMENT 'Payment state: Updated | Not Updated | Pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Real Property collateral details — child of loans (1:1)';
+
+--
+-- Dumping data for table `loan_real_property_details`
+--
+
+INSERT INTO `loan_real_property_details` (`id`, `loan_id`, `tct_no`, `tax_dec_no`, `property_payments`, `created_at`, `updated_at`) VALUES
+(1, 3, '123456789', '123456789', 'Updated', '2026-06-10 01:41:15', '2026-06-10 01:41:15'),
+(2, 4, '123456789', '123456789', 'Updated', '2026-06-10 05:39:43', '2026-06-10 05:39:43');
 
 -- --------------------------------------------------------
 
@@ -136,18 +181,77 @@ CREATE TABLE `loan_schedule` (
 --
 
 INSERT INTO `loan_schedule` (`id`, `loan_id`, `period`, `principal`, `interest`, `payment`, `due_date`, `status`, `rem_principal`, `rem_interest`, `rem_penalty`, `remarks`) VALUES
-(3, 2, 1, 4166.67, 1000.00, 5166.67, '2026-02-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(4, 2, 2, 4166.67, 1000.00, 5166.67, '2026-03-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(5, 2, 3, 4166.67, 1000.00, 5166.67, '2026-04-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(6, 2, 4, 4166.67, 1000.00, 5166.67, '2026-05-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(7, 2, 5, 4166.67, 1000.00, 5166.67, '2026-06-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(8, 2, 6, 4166.67, 1000.00, 5166.67, '2026-07-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(9, 2, 7, 4166.67, 1000.00, 5166.67, '2026-08-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(10, 2, 8, 4166.67, 1000.00, 5166.67, '2026-09-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(11, 2, 9, 4166.67, 1000.00, 5166.67, '2026-10-01', 'paid', 0.00, 0.00, 0.00, NULL),
-(12, 2, 10, 4166.67, 1000.00, 5166.67, '2026-11-01', 'pending', 620.00, 0.00, 0.00, NULL),
-(13, 2, 11, 4166.67, 1000.00, 5166.67, '2026-12-01', 'pending', 4166.67, 0.00, 0.00, NULL),
-(14, 2, 12, 4166.67, 1000.00, 5166.67, '2027-01-01', 'pending', 4166.67, 0.00, 0.00, NULL);
+(183, 14, 1, 416.67, 100.00, 516.67, '2026-07-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(184, 14, 2, 416.67, 100.00, 516.67, '2026-08-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(185, 14, 3, 416.67, 100.00, 516.67, '2026-09-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(186, 14, 4, 416.67, 100.00, 516.67, '2026-10-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(187, 14, 5, 416.67, 100.00, 516.67, '2026-11-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(188, 14, 6, 416.67, 100.00, 516.67, '2026-12-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(189, 14, 7, 416.67, 100.00, 516.67, '2027-01-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(190, 14, 8, 416.67, 100.00, 516.67, '2027-02-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(191, 14, 9, 416.67, 100.00, 516.67, '2027-03-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(192, 14, 10, 416.67, 100.00, 516.67, '2027-04-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(193, 14, 11, 416.67, 100.00, 516.67, '2027-05-03', 'pending', 416.67, 100.00, 0.00, NULL),
+(194, 14, 12, 416.67, 100.00, 516.67, '2027-06-03', 'pending', 416.67, 100.00, 0.00, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_schedules`
+--
+
+CREATE TABLE `loan_schedules` (
+  `id` int(11) NOT NULL,
+  `loan_id` int(11) NOT NULL,
+  `period` int(11) NOT NULL,
+  `due_date` date NOT NULL,
+  `amortization` decimal(15,2) NOT NULL,
+  `principal_component` decimal(15,2) NOT NULL,
+  `interest_component` decimal(15,2) NOT NULL,
+  `remaining_principal` decimal(15,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `loan_schedules`
+--
+
+INSERT INTO `loan_schedules` (`id`, `loan_id`, `period`, `due_date`, `amortization`, `principal_component`, `interest_component`, `remaining_principal`) VALUES
+(49, 1, 1, '2026-02-10', 3100.00, 2500.00, 600.00, 0.00),
+(50, 1, 2, '2026-03-10', 3100.00, 2500.00, 600.00, 0.00),
+(51, 1, 3, '2026-04-10', 3100.00, 2500.00, 600.00, 0.00),
+(52, 1, 4, '2026-05-10', 3100.00, 2500.00, 600.00, 0.00),
+(53, 1, 5, '2026-06-10', 3100.00, 2500.00, 600.00, 0.00),
+(54, 1, 6, '2026-07-10', 3100.00, 2500.00, 600.00, 0.00),
+(55, 1, 7, '2026-08-10', 3100.00, 2500.00, 600.00, 0.00),
+(56, 1, 8, '2026-09-10', 3100.00, 2500.00, 600.00, 0.00),
+(57, 1, 9, '2026-10-10', 3100.00, 2500.00, 600.00, 0.00),
+(58, 1, 10, '2026-11-10', 3100.00, 2500.00, 600.00, 0.00),
+(59, 1, 11, '2026-12-10', 3100.00, 2500.00, 600.00, 0.00),
+(60, 1, 12, '2027-01-10', 3100.00, 2500.00, 600.00, 0.00),
+(97, 3, 1, '2026-03-04', 4727.98, 3727.98, 1000.00, 0.00),
+(98, 3, 2, '2026-04-04', 4727.98, 3802.54, 925.44, 0.00),
+(99, 3, 3, '2026-05-04', 4727.98, 3878.59, 849.39, 0.00),
+(100, 3, 4, '2026-06-04', 4727.98, 3956.16, 771.82, 0.00),
+(101, 3, 5, '2026-07-04', 4727.98, 4035.29, 692.69, 0.00),
+(102, 3, 6, '2026-08-04', 4727.98, 4115.99, 611.99, 0.00),
+(103, 3, 7, '2026-09-04', 4727.98, 4198.31, 529.67, 0.00),
+(104, 3, 8, '2026-10-04', 4727.98, 4282.28, 445.70, 0.00),
+(105, 3, 9, '2026-11-04', 4727.98, 4367.92, 360.06, 0.00),
+(106, 3, 10, '2026-12-04', 4727.98, 4455.28, 272.70, 0.00),
+(107, 3, 11, '2027-01-04', 4727.98, 4544.39, 183.59, 0.00),
+(108, 3, 12, '2027-02-04', 4727.98, 4635.27, 92.71, 0.00),
+(133, 4, 1, '2026-05-08', 31000.00, 25000.00, 6000.00, 0.00),
+(134, 4, 2, '2026-06-08', 31000.00, 25000.00, 6000.00, 0.00),
+(135, 4, 3, '2026-07-08', 31000.00, 25000.00, 6000.00, 0.00),
+(136, 4, 4, '2026-08-08', 31000.00, 25000.00, 6000.00, 0.00),
+(137, 4, 5, '2026-09-08', 31000.00, 25000.00, 6000.00, 0.00),
+(138, 4, 6, '2026-10-08', 31000.00, 25000.00, 6000.00, 0.00),
+(139, 4, 7, '2026-11-08', 31000.00, 25000.00, 6000.00, 0.00),
+(140, 4, 8, '2026-12-08', 31000.00, 25000.00, 6000.00, 0.00),
+(141, 4, 9, '2027-01-08', 31000.00, 25000.00, 6000.00, 0.00),
+(142, 4, 10, '2027-02-08', 31000.00, 25000.00, 6000.00, 0.00),
+(143, 4, 11, '2027-03-08', 31000.00, 25000.00, 6000.00, 0.00),
+(144, 4, 12, '2027-04-08', 31000.00, 25000.00, 6000.00, 0.00);
 
 -- --------------------------------------------------------
 
@@ -189,8 +293,7 @@ CREATE TABLE `members` (
 --
 
 INSERT INTO `members` (`id`, `member_id`, `membership_type`, `username`, `password`, `first_name`, `middle_name`, `last_name`, `email`, `profile_picture`, `prefix`, `suffix`, `birthdate`, `death_date`, `approval_date`, `balance`, `is_mgs`, `remarks`, `role_id`, `phone_number`, `telephone_number`, `civil_status`, `address`, `status`, `phone_number_2`, `telephone_number_2`) VALUES
-(1, 1, 'Regular', 'user', '$2y$10$tutYx2HGkuhEBx0d3I12RuryfR03dkze/w1KNngE4mMjwSKWkOM4q', 'Justin', 'Drew', 'Bieber', 'justinbieber@gmail.com', 'default.png', 'Mr.', '', '1994-03-01', NULL, '2026-03-05 09:45:40', 40670.00, 1, 'Celebrity', 2, '09827066064', '82093975', 'Married', 'Canada', 'Active', '', ''),
-(2, 2, 'Regular', 'james2', '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'James', 'Catherine', 'Williams', 'james.williams2@example.com', 'default.png', '', '', '1982-11-24', NULL, '2026-03-05 09:45:40', 47551.00, 1, 'System generated member profile.', 2, '09277661896', '82636899', 'Single', '2 Main St, Barangay 14, Metro Manila', 'Overdue', NULL, NULL),
+(1, 1, 'Regular', 'user', '$2y$10$tutYx2HGkuhEBx0d3I12RuryfR03dkze/w1KNngE4mMjwSKWkOM4q', 'Randall Jay', 'Veloria', 'Unarce', 'justinbieber@gmail.com', 'default.png', 'Mr.', '', '2003-07-21', '2003-07-21', '2026-03-05 09:45:40', 40670.00, 1, 'Celebrity', 2, '09827066064', '82093975', 'Single', 'Stratford, Ontario, Canada', 'Active', '09123456789', ''),
 (3, 3, 'Regular', 'mary3', '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'Mary', 'Gabriel', 'Brown', 'mary.brown3@example.com', 'default.png', '', '', '1985-10-01', NULL, '2026-03-05 09:45:41', 21000.00, 1, 'System generated member profile.', 2, '09323926876', '82706147', 'Single', '3 Main St, Barangay 17, Metro Manila', 'Under Litigation', NULL, NULL),
 (4, 4, 'Regular', 'mary4', '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'Mary', 'Catherine', 'Williams', 'mary.williams4@example.com', 'default.png', '', '', '2003-08-02', NULL, '2026-03-05 09:45:41', 3663.00, 1, 'System generated member profile.', 2, '09159676208', '82766341', 'Single', '4 Main St, Barangay 20, Metro Manila', 'Active', '', ''),
 (5, 5, 'Regular', 'robert5', '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'Robert', 'Gabriel', 'Williams', 'robert.williams5@example.com', 'default.png', '', '', '1996-08-09', NULL, '2026-03-05 09:45:41', 47472.00, 1, 'System generated member profile.', 2, '09542049364', '84130167', 'Married', '5 Main St, Barangay 4, Metro Manila', 'Delisted', NULL, NULL),
@@ -288,7 +391,7 @@ INSERT INTO `members` (`id`, `member_id`, `membership_type`, `username`, `passwo
 (97, 97, 'Associate', 'patricia97', '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'Patricia', 'Bernardo', 'Davis', 'patricia.davis97@example.com', 'default.png', '', '', '1971-06-14', NULL, '2026-03-05 09:45:47', 10281.00, 1, 'System generated member profile.', 2, '09368629354', '84018774', 'Married', '97 Main St, Barangay 13, Metro Manila', 'Under Litigation', NULL, NULL),
 (98, 98, 'Associate', 'mary98', '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'Mary', 'Fernando', 'Williams', 'mary.williams98@example.com', 'default.png', '', '', '1980-05-05', NULL, '2026-03-05 09:45:47', 38077.00, 0, 'System generated member profile.', 2, '09814157622', '88449434', 'Widowed', '98 Main St, Barangay 13, Metro Manila', 'Under Litigation', NULL, NULL),
 (99, 99, 'Associate', 'mary99', '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'Mary', 'Evangeline', 'Jones', 'mary.jones99@example.com', 'default.png', '', '', '1978-11-26', NULL, '2026-03-05 09:45:48', 14192.00, 0, 'System generated member profile.', 2, '09183101297', '81364247', 'Married', '99 Main St, Barangay 10, Metro Manila', 'Under Litigation', NULL, NULL),
-(104, 100, 'Associate', NULL, '$2y$10$XZJowOg/H8KTzUXSyr.a0.4VYTf3HrhjzhhL5xB097I.hjruZr0k6', 'Mary', 'Catherine', 'Williams', 'mary.williams@example.com', NULL, '', '', '1989-06-06', NULL, NULL, 0.00, 0, '', NULL, '09827066064', '82766341', 'Married', 'Tokyo, Japan', 'Active', NULL, NULL);
+(107, 101, 'Regular', NULL, NULL, 'Justin', 'Drew', 'Bieber', 'justinbieber@gmail.com', NULL, '', '', '2026-06-10', NULL, NULL, 50000.00, 0, '', NULL, '09827066064', '', 'Single', '', 'Active', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -325,14 +428,30 @@ ALTER TABLE `admin`
 -- Indexes for table `loans`
 --
 ALTER TABLE `loans`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `member_id` (`member_id`);
+
+--
+-- Indexes for table `loan_documents`
+--
+ALTER TABLE `loan_documents`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_loan_doc` (`loan_id`,`doc_type`),
+  ADD KEY `fk_loan_doc_loan` (`loan_id`);
 
 --
 -- Indexes for table `loan_payments`
 --
 ALTER TABLE `loan_payments`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_payment_loan` (`loan_id`);
+  ADD KEY `loan_id` (`loan_id`);
+
+--
+-- Indexes for table `loan_real_property_details`
+--
+ALTER TABLE `loan_real_property_details`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_loan_real_property` (`loan_id`);
 
 --
 -- Indexes for table `loan_schedule`
@@ -340,6 +459,13 @@ ALTER TABLE `loan_payments`
 ALTER TABLE `loan_schedule`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_schedule_loan` (`loan_id`);
+
+--
+-- Indexes for table `loan_schedules`
+--
+ALTER TABLE `loan_schedules`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `loan_id` (`loan_id`);
 
 --
 -- Indexes for table `members`
@@ -370,25 +496,43 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `loans`
 --
 ALTER TABLE `loans`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `loan_documents`
+--
+ALTER TABLE `loan_documents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `loan_payments`
 --
 ALTER TABLE `loan_payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `loan_real_property_details`
+--
+ALTER TABLE `loan_real_property_details`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `loan_schedule`
 --
 ALTER TABLE `loan_schedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=195;
+
+--
+-- AUTO_INCREMENT for table `loan_schedules`
+--
+ALTER TABLE `loan_schedules`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=145;
 
 --
 -- AUTO_INCREMENT for table `members`
 --
 ALTER TABLE `members`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=105;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -407,16 +551,40 @@ ALTER TABLE `admin`
   ADD CONSTRAINT `admin_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
 
 --
+-- Constraints for table `loans`
+--
+ALTER TABLE `loans`
+  ADD CONSTRAINT `loans_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `members` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `loan_documents`
+--
+ALTER TABLE `loan_documents`
+  ADD CONSTRAINT `fk_loan_doc_loan` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Constraints for table `loan_payments`
 --
 ALTER TABLE `loan_payments`
-  ADD CONSTRAINT `fk_payment_loan` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `loan_payments_ibfk_1` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `loan_real_property_details`
+--
+ALTER TABLE `loan_real_property_details`
+  ADD CONSTRAINT `fk_lrpd_loan_id` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `loan_schedule`
 --
 ALTER TABLE `loan_schedule`
   ADD CONSTRAINT `fk_schedule_loan` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `loan_schedules`
+--
+ALTER TABLE `loan_schedules`
+  ADD CONSTRAINT `loan_schedules_ibfk_1` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `members`
