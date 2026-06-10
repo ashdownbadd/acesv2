@@ -572,6 +572,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ── DOCUMENT UPLOAD HELPER ────────────────────────────────────────────
+  // Called after save_loan succeeds so we have a valid loan_id.
+  // Silently skips if no file is selected for that input.
+  const uploadDocumentIfSelected = async (inputId, docType, loanId) => {
+    const input = document.getElementById(inputId);
+    if (!input || !input.files || input.files.length === 0) return;
+
+    const formData = new FormData();
+    formData.append("document", input.files[0]);
+    formData.append("loan_id",  loanId);
+    formData.append("doc_type", docType);
+
+    try {
+      const res = await fetch("amortization.php?action=upload_document", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await res.json();
+      if (!result.success) {
+        console.warn(`Document upload failed (${docType}):`, result.error);
+      }
+    } catch (err) {
+      console.error(`Document upload network error (${docType}):`, err);
+    }
+  };
+
   // ── INTERCEPT & ASYNC PERSISTENCE CALL ───────────────────────────
   saveButton.addEventListener("click", async () => {
     if (!form.checkValidity()) {
@@ -611,7 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     saveButton.disabled = true;
-    saveButton.textContent = "Saving Configurations...";
+    saveButton.textContent = "Saving...";
 
     try {
       const response = await fetch(`amortization.php?action=save_loan`, {
@@ -622,6 +648,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const result = await response.json();
       if (result.success) {
+        // Upload any selected Real Property documents
+        if (result.loan_id) {
+          await uploadDocumentIfSelected("file_undertaking",   "undertaking",     result.loan_id);
+          await uploadDocumentIfSelected("file_deed",          "deed_assignment",  result.loan_id);
+        }
         alert(result.message);
       } else {
         alert("Database Error: " + result.error);
@@ -631,7 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Network Connection Error occurred while saving configuration.");
     } finally {
       saveButton.disabled = false;
-      saveButton.textContent = "Save Loan Configuration";
+      saveButton.textContent = "Save";
     }
   });
 

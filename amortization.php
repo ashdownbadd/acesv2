@@ -17,6 +17,58 @@ $isAdmin = ($_SESSION['role'] ?? '') === 'admin';
 // ── API: HANDLE AJAX ACTIONS FOR PERSISTENCE ─────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
   header('Content-Type: application/json');
+  $action = $_GET['action'];
+
+  // ── FILE UPLOAD ACTION (multipart — must be handled before json_decode) ──
+  if ($action === 'upload_document') {
+    $loanId  = intval($_POST['loan_id']  ?? 0);
+    $docType = $_POST['doc_type'] ?? '';
+
+    if (!$loanId || !in_array($docType, ['undertaking', 'deed_assignment'])) {
+      echo json_encode(['success' => false, 'error' => 'Invalid parameters.']);
+      exit;
+    }
+
+    $file = $_FILES['document'] ?? null;
+    if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+      echo json_encode(['success' => false, 'error' => 'Upload failed or no file received.']);
+      exit;
+    }
+
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($ext !== 'pdf') {
+      echo json_encode(['success' => false, 'error' => 'Only PDF files are allowed.']);
+      exit;
+    }
+
+    $uploadDir = __DIR__ . '/uploads/loan_documents/' . $loanId . '/';
+    if (!is_dir($uploadDir)) {
+      mkdir($uploadDir, 0755, true);
+    }
+
+    $fileName = $docType . '_' . time() . '.pdf';
+    $filePath = $uploadDir . $fileName;
+    $storedPath = 'uploads/loan_documents/' . $loanId . '/' . $fileName;
+
+    if (move_uploaded_file($file['tmp_name'], $filePath)) {
+      // Upsert: one record per loan_id + doc_type combination
+      $stmt = $pdo->prepare("
+        INSERT INTO loan_documents (loan_id, doc_type, file_name, file_path)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          file_name = VALUES(file_name),
+          file_path = VALUES(file_path),
+          uploaded_at = CURRENT_TIMESTAMP
+      ");
+      $stmt->execute([$loanId, $docType, $fileName, $storedPath]);
+      echo json_encode(['success' => true, 'path' => $storedPath]);
+    } else {
+      echo json_encode(['success' => false, 'error' => 'Failed to move uploaded file.']);
+    }
+    exit;
+  }
+
+  // ── ALL OTHER ACTIONS (JSON body) ────────────────────────────────────
   $body = json_decode(file_get_contents('php://input'), true);
 
   if ($_GET['action'] === 'save_loan') {
@@ -100,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
       }
 
       $pdo->commit();
-      echo json_encode(['success' => true, 'message' => 'Amortization schedule saved successfully!']);
+      echo json_encode(['success' => true, 'loan_id' => (int)$loanId, 'message' => 'Amortization schedule saved successfully!']);
     } catch (Exception $e) {
       $pdo->rollBack();
       echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -515,345 +567,340 @@ if ($memberId > 0) {
     transform: translateY(0);
   }
 </style>
-</head>
 
-<body>
+<div class="page">
+  <a href="index.php?page=dashboard" class="am-back">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M10 12L6 8l4-4" />
+    </svg>
+    Back to Dashboard
+  </a>
 
+  <?php if ($memberId > 0): ?>
+    <div class="member-banner">
+      Active Member Context: <span style="color: var(--gold); font-weight: 700;"><?= htmlspecialchars($memberName) ?></span> (ID: <?= $memberId ?>)
+    </div>
+  <?php endif; ?>
 
-
-  <div class="page">
-    <a href="index.php?page=dashboard" class="am-back">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M10 12L6 8l4-4" />
-      </svg>
-      Back to Dashboard
-    </a>
-
-    <?php if ($memberId > 0): ?>
-      <div class="member-banner">
-        Active Member Context: <span style="color: var(--gold); font-weight: 700;"><?= htmlspecialchars($memberName) ?></span> (ID: <?= $memberId ?>)
-      </div>
-    <?php endif; ?>
-
-    <form id="amortizationForm" onsubmit="event.preventDefault();">
-      <div class="row">
-        <div class="section-label">Loan parameters</div>
-        <div class="grid-4">
-          <div class="card">
-            <div class="card__label">Loan type</div>
-            <select id="loan_type" required>
-              <option value="" disabled selected>— Select Type —</option>
-              <option value="Bridge Financing">Bridge Financing</option>
-              <option value="Investment Loan">Investment Loan</option>
-              <option value="Pension Loan">Pension Loan</option>
-              <option value="Productivity Loan">Productivity Loan</option>
-              <option value="Personal Loan">Personal Loan</option>
-              <option value="Salary Loan">Salary Loan</option>
-              <option value="Micro-Finance Loan">Micro-Finance Loan</option>
-            </select>
-          </div>
-          <div class="card">
-            <div class="card__label">Collateral</div>
-            <select id="collateral" required>
-              <option value="" disabled selected>— Select Collateral —</option>
-              <option value="Post-Dated Check">Post-Dated Check</option>
-              <option value="Real Property">Real Property</option>
-              <option value="Chattels / Movable Assets">Chattels / Movable Assets</option>
-            </select>
-          </div>
-          <div class="card">
-            <div class="card__label">SOA Status</div>
-            <select id="soa_status" required>
-              <option value="" disabled selected>— Select Status —</option>
-              <option value="Updated">Updated</option>
-              <option value="Pending">Pending</option>
-              <option value="Overdue">Overdue</option>
-            </select>
-          </div>
-          <div class="card">
-            <div class="card__label">Amortization type</div>
-            <select id="amort_type" required>
-              <option value="" disabled selected>— Select Rules —</option>
-              <option value="Straight-line">Straight-line</option>
-              <option value="Diminishing balance">Diminishing balance</option>
-              <option value="Manual">Manual</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="row" id="real_property_section" style="display: none;">
-        <div class="section-label">Real Property Details</div>
-        <div class="grid-4">
-          <div class="card">
-            <div class="card__label">TCT No.</div>
-            <input type="text" id="rp_tct" placeholder="Enter TCT Number">
-          </div>
-          <div class="card">
-            <div class="card__label">Tax Declaration No.</div>
-            <input type="text" id="rp_tax" placeholder="Enter Tax Dec Number">
-          </div>
-          <div class="card">
-            <div class="card__label">Real Property Payments</div>
-            <select id="rp_payments">
-              <option value="" disabled selected>— Select Payment State —</option>
-              <option value="Updated">Updated</option>
-              <option value="Not Updated">Not Updated</option>
-              <option value="Pending">Pending</option>
-            </select>
-          </div>
-          <div class="card">
-            <div class="card__label">Required Uploads (.PDF Only)</div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="rp-upload-label" id="lbl_undertaking">
-                <span>Undertaking File</span>
-                <input type="file" id="file_undertaking" accept=".pdf" style="display:none;">
-              </label>
-              <label class="rp-upload-label" id="lbl_deed">
-                <span>Assignment of Deed</span>
-                <input type="file" id="file_deed" accept=".pdf" style="display:none;">
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="section-label">Numeric Terms & Figures</div>
-        <div class="grid-4">
-          <div class="card">
-            <div class="card__label">Principal Amount (₱)</div>
-            <input type="number" id="principal" min="0" step="0.01" placeholder="0.00" required>
-          </div>
-          <div class="card">
-            <div class="card__label">Interest Rate (%)</div>
-            <input type="number" id="interest_rate" readonly placeholder="Calculated from type">
-          </div>
-          <div class="card">
-            <div class="card__label">Terms (Months)</div>
-            <input type="number" id="terms" min="1" max="360" placeholder="Duration count" required>
-          </div>
-          <div class="card">
-            <div class="card__label">Start Date</div>
-            <input type="date" id="start_date" required>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="section-label">Deducted Fee Calculations</div>
-        <div class="grid-4">
-          <div class="card">
-            <div class="card__label">Processing Fee (2%)</div>
-            <input type="text" id="fee_processing" readonly value="₱0.00">
-          </div>
-          <div class="card">
-            <div class="card__label">Insurance (Principal + 1000 x 1.2 / Terms)</div>
-            <input type="text" id="fee_insurance" readonly value="₱0.00">
-          </div>
-          <div class="card">
-            <div class="card__label">Notarial Fee (Fixed)</div>
-            <input type="text" id="fee_notarial" readonly value="₱400.00">
-          </div>
-        </div>
-      </div>
-    </form>
-
+  <form id="amortizationForm" onsubmit="event.preventDefault();">
     <div class="row">
-      <div class="section-label">Loan Calculation Summary</div>
-      <div class="summary-strip">
-        <div class="stat stat--highlight">
-          <div class="stat__label">Amortization / Period</div>
-          <div class="stat__value" id="sum_amortization">₱0.00</div>
+      <div class="section-label">Loan parameters</div>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card__label">Loan type</div>
+          <select id="loan_type" required>
+            <option value="" disabled selected>— Select Type —</option>
+            <option value="Bridge Financing">Bridge Financing</option>
+            <option value="Investment Loan">Investment Loan</option>
+            <option value="Pension Loan">Pension Loan</option>
+            <option value="Productivity Loan">Productivity Loan</option>
+            <option value="Personal Loan">Personal Loan</option>
+            <option value="Salary Loan">Salary Loan</option>
+            <option value="Micro-Finance Loan">Micro-Finance Loan</option>
+          </select>
         </div>
-        <div class="stat">
-          <div class="stat__label">Net Proceeds</div>
-          <div class="stat__value" id="sum_net_proceeds">₱0.00</div>
+        <div class="card">
+          <div class="card__label">Collateral</div>
+          <select id="collateral" required>
+            <option value="" disabled selected>— Select Collateral —</option>
+            <option value="Post-Dated Check">Post-Dated Check</option>
+            <option value="Real Property">Real Property</option>
+            <option value="Chattels / Movable Assets">Chattels / Movable Assets</option>
+          </select>
         </div>
-        <div class="stat">
-          <div class="stat__label">Total Interest Cost</div>
-          <div class="stat__value" id="sum_interest">₱0.00</div>
+        <div class="card">
+          <div class="card__label">SOA Status</div>
+          <select id="soa_status" required>
+            <option value="" disabled selected>— Select Status —</option>
+            <option value="Updated">Updated</option>
+            <option value="Pending">Pending</option>
+            <option value="Overdue">Overdue</option>
+          </select>
         </div>
-        <div class="stat">
-          <div class="stat__label">Total Gross Repayment</div>
-          <div class="stat__value" id="sum_total_payment">₱0.00</div>
+        <div class="card">
+          <div class="card__label">Amortization type</div>
+          <select id="amort_type" required>
+            <option value="" disabled selected>— Select Rules —</option>
+            <option value="Straight-line">Straight-line</option>
+            <option value="Diminishing balance">Diminishing balance</option>
+            <option value="Manual">Manual</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" id="real_property_section" style="display: none;">
+      <div class="section-label">Real Property Details</div>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card__label">TCT No.</div>
+          <input type="text" id="rp_tct" placeholder="Enter TCT Number">
+        </div>
+        <div class="card">
+          <div class="card__label">Tax Declaration No.</div>
+          <input type="text" id="rp_tax" placeholder="Enter Tax Dec Number">
+        </div>
+        <div class="card">
+          <div class="card__label">Real Property Payments</div>
+          <select id="rp_payments">
+            <option value="" disabled selected>— Select Payment State —</option>
+            <option value="Updated">Updated</option>
+            <option value="Not Updated">Not Updated</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card__label">Required Uploads (.PDF Only)</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <label class="rp-upload-label" id="lbl_undertaking">
+              <span>Undertaking File</span>
+              <input type="file" id="file_undertaking" accept=".pdf" style="display:none;">
+            </label>
+            <label class="rp-upload-label" id="lbl_deed">
+              <span>Assignment of Deed</span>
+              <input type="file" id="file_deed" accept=".pdf" style="display:none;">
+            </label>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="row">
-      <div class="table-card">
-        <div class="table-card__head">
-          <div class="table-card__title">Amortization Schedule Ledger</div>
-          <div id="terms_badge" style="font-size:11px; opacity:0.6; font-family:var(--font-mono)">0 Months</div>
+      <div class="section-label">Numeric Terms & Figures</div>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card__label">Principal Amount (₱)</div>
+          <input type="number" id="principal" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+        <div class="card">
+          <div class="card__label">Interest Rate (%)</div>
+          <input type="number" id="interest_rate" readonly placeholder="Calculated from type">
+        </div>
+        <div class="card">
+          <div class="card__label">Terms (Months)</div>
+          <input type="number" id="terms" min="1" max="360" placeholder="Duration count" required>
+        </div>
+        <div class="card">
+          <div class="card__label">Start Date</div>
+          <input type="date" id="start_date" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="section-label">Deducted Fee Calculations</div>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card__label">Processing Fee (2%)</div>
+          <input type="text" id="fee_processing" readonly value="₱0.00">
+        </div>
+        <div class="card">
+          <div class="card__label">Insurance (Principal + 1000 x 1.2 / Terms)</div>
+          <input type="text" id="fee_insurance" readonly value="₱0.00">
+        </div>
+        <div class="card">
+          <div class="card__label">Notarial Fee (Fixed)</div>
+          <input type="text" id="fee_notarial" readonly value="₱400.00">
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="row">
+    <div class="section-label">Loan Calculation Summary</div>
+    <div class="summary-strip">
+      <div class="stat stat--highlight">
+        <div class="stat__label">Amortization / Period</div>
+        <div class="stat__value" id="sum_amortization">₱0.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Net Proceeds</div>
+        <div class="stat__value" id="sum_net_proceeds">₱0.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Total Interest Cost</div>
+        <div class="stat__value" id="sum_interest">₱0.00</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Total Gross Repayment</div>
+        <div class="stat__value" id="sum_total_payment">₱0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-card">
+      <div class="table-card__head">
+        <div class="table-card__title">Amortization Schedule</div>
+        <div id="terms_badge" style="font-size:11px; opacity:0.6; font-family:var(--font-mono)">0 Months</div>
+      </div>
+      <div class="tbl-wrap">
+        <table id="schedule_table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th style="text-align: right;">Due Date</th>
+              <th>Total Amount Due</th>
+              <th>Principal</th>
+              <th>Interest</th>
+              <th>Penalty</th>
+            </tr>
+          </thead>
+          <tbody id="schedule_body">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--t3); padding: 30px;">
+                Fill out parameters above to dynamically compute schedule data.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <button type="button" class="c-btn-save" id="btn_save_loan">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      Save
+    </button>
+  </div>
+
+  <div class="row" style="margin-top: 40px;">
+    <div class="section-label">Application of Payment</div>
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap); align-items: start;">
+
+      <div style="display: flex; flex-direction: column; gap: var(--gap);">
+        <div class="card" style="background: #1e1e24; color: #fff; border-color: #2b2b36;">
+          <div class="card__label" style="color: rgba(255,255,255,0.4);">Current Outstanding Balances</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; font-size: 13px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="opacity: 0.7;">Total Outstanding Principal:</span>
+              <span id="live_total_principal" style="font-family: var(--font-mono); font-weight: 600;">₱0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="opacity: 0.7;">Total Outstanding Interest:</span>
+              <span id="live_total_interest" style="font-family: var(--font-mono); font-weight: 600;">₱0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="opacity: 0.7;">Total Outstanding Penalty:</span>
+              <span id="live_total_penalty" style="font-family: var(--font-mono); font-weight: 600; color: #ff6b6b;">₱0.00</span>
+            </div>
+            <div style="border-top: 1px dashed rgba(255,255,255,0.2); margin-top: 5px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700;">
+              <span style="color: var(--gold);">Grand Total Due:</span>
+              <span id="live_grand_total" style="font-family: var(--font-mono); color: var(--gold);">₱0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__label">Payment</div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
+            <div>
+              <label style="font-size: 11px; font-weight:600; color: var(--t2); display:block; margin-bottom:4px;">Amount Paid (₱)</label>
+              <input type="number" id="pay_amount_input" min="0.01" step="0.01" placeholder="0.00" style="background:#fff;">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight:600; color: var(--t2); display:block; margin-bottom:4px;">Remarks</label>
+              <input type="text" id="pay_remarks_input" placeholder="Optional transaction notes...">
+            </div>
+            <button type="button" class="c-btn-save" id="btn_apply_payment" style="margin-top: 5px; background: var(--ok); box-shadow: 0 4px 12px rgba(39,168,88,0.2);">
+              Apply
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card" style="margin-top: 25px;">
+        <div class="table-card__head" style="background: var(--raised);">
+          <div class="table-card__title">Transaction History</div>
         </div>
         <div class="tbl-wrap">
-          <table id="schedule_table">
+          <table>
             <thead>
               <tr>
-                <th>Period</th>
-                <th style="text-align: right;">Due Date</th>
-                <th>Total Amount Due</th>
-                <th>Principal</th>
-                <th>Interest</th>
-                <th>Penalty</th>
+                <th style="text-align: left; padding: 12px;">Date / Time</th>
+                <th style="text-align: right;">Amount Paid</th>
+                <th style="text-align: right;">Penalty Applied</th>
+                <th style="text-align: right;">Interest Applied</th>
+                <th style="text-align: right;">Principal Applied</th>
+                <th style="text-align: right;">Excess Balance</th>
+                <th style="text-align: left; padding-left: 15px;">Remarks / Notes</th>
               </tr>
             </thead>
-            <tbody id="schedule_body">
-              <tr>
-                <td colspan="6" style="text-align: center; color: var(--t3); padding: 30px;">
-                  Fill out parameters above to dynamically compute schedule data.
-                </td>
-              </tr>
+            <tbody>
+              <?php if (empty($existingPayments)): ?>
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--t3); padding: 40px 10px;">
+                    No permanent payment transactions found in the database for this member.
+                  </td>
+                </tr>
+              <?php else: ?>
+                <?php foreach ($existingPayments as $pay): ?>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="text-align: left; padding: 12px; font-family: monospace; color: var(--t2);">
+                      <?= date('M d, Y h:i A', strtotime($pay['created_at'])) ?>
+                    </td>
+                    <td style="text-align: right; font-weight: 600; color: var(--ok);">
+                      ₱<?= number_format($pay['amount_paid'], 2) ?>
+                    </td>
+                    <td style="text-align: right; color: var(--danger);">
+                      ₱<?= number_format($pay['penalty_applied'], 2) ?>
+                    </td>
+                    <td style="text-align: right; color: var(--gold);">
+                      ₱<?= number_format($pay['interest_applied'], 2) ?>
+                    </td>
+                    <td style="text-align: right; color: #4fa8ff;">
+                      ₱<?= number_format($pay['principal_applied'], 2) ?>
+                    </td>
+                    <td style="text-align: right; color: <?= $pay['excess_cash'] > 0 ? 'var(--gold)' : 'var(--t3)' ?>;">
+                      ₱<?= number_format($pay['excess_cash'], 2) ?>
+                    </td>
+                    <td style="text-align: left; padding-left: 15px; color: var(--t3); font-style: italic; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <?= htmlspecialchars($pay['remarks'] ?? 'None') ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
             </tbody>
           </table>
         </div>
       </div>
 
-      <button type="button" class="c-btn-save" id="btn_save_loan">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-        Save Loan Configuration
-      </button>
-    </div>
-
-    <div class="row" style="margin-top: 40px;">
-      <div class="section-label">Application of Payment Ledger System</div>
-
-      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap); align-items: start;">
-
-        <div style="display: flex; flex-direction: column; gap: var(--gap);">
-          <div class="card" style="background: #1e1e24; color: #fff; border-color: #2b2b36;">
-            <div class="card__label" style="color: rgba(255,255,255,0.4);">Current Outstanding Balances</div>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; font-size: 13px;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="opacity: 0.7;">Total Outstanding Principal:</span>
-                <span id="live_total_principal" style="font-family: var(--font-mono); font-weight: 600;">₱0.00</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="opacity: 0.7;">Total Outstanding Interest:</span>
-                <span id="live_total_interest" style="font-family: var(--font-mono); font-weight: 600;">₱0.00</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="opacity: 0.7;">Total Outstanding Penalty:</span>
-                <span id="live_total_penalty" style="font-family: var(--font-mono); font-weight: 600; color: #ff6b6b;">₱0.00</span>
-              </div>
-              <div style="border-top: 1px dashed rgba(255,255,255,0.2); margin-top: 5px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700;">
-                <span style="color: var(--gold);">Grand Total Due:</span>
-                <span id="live_grand_total" style="font-family: var(--font-mono); color: var(--gold);">₱0.00</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card__label">Post Member Payment</div>
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
-              <div>
-                <label style="font-size: 11px; font-weight:600; color: var(--t2); display:block; margin-bottom:4px;">Amount Paid (₱)</label>
-                <input type="number" id="pay_amount_input" min="0.01" step="0.01" placeholder="0.00" style="background:#fff;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight:600; color: var(--t2); display:block; margin-bottom:4px;">Staff Remarks</label>
-                <input type="text" id="pay_remarks_input" placeholder="Optional transaction notes...">
-              </div>
-              <button type="button" class="c-btn-save" id="btn_apply_payment" style="margin-top: 5px; background: var(--ok); box-shadow: 0 4px 12px rgba(39,168,88,0.2);">
-                Apply Allocation Waterfall
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="table-card" style="margin-top: 25px;">
-          <div class="table-card__head" style="background: var(--raised);">
-            <div class="table-card__title">📜 Official Payment Transaction History</div>
-          </div>
-          <div class="tbl-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th style="text-align: left; padding: 12px;">Date / Time</th>
-                  <th style="text-align: right;">Amount Paid</th>
-                  <th style="text-align: right;">Penalty Applied</th>
-                  <th style="text-align: right;">Interest Applied</th>
-                  <th style="text-align: right;">Principal Applied</th>
-                  <th style="text-align: right;">Excess Balance</th>
-                  <th style="text-align: left; padding-left: 15px;">Remarks / Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (empty($existingPayments)): ?>
-                  <tr>
-                    <td colspan="7" style="text-align: center; color: var(--t3); padding: 40px 10px;">
-                      No permanent payment transactions found in the database for this member.
-                    </td>
-                  </tr>
-                <?php else: ?>
-                  <?php foreach ($existingPayments as $pay): ?>
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                      <td style="text-align: left; padding: 12px; font-family: monospace; color: var(--t2);">
-                        <?= date('M d, Y h:i A', strtotime($pay['created_at'])) ?>
-                      </td>
-                      <td style="text-align: right; font-weight: 600; color: var(--ok);">
-                        ₱<?= number_format($pay['amount_paid'], 2) ?>
-                      </td>
-                      <td style="text-align: right; color: var(--danger);">
-                        ₱<?= number_format($pay['penalty_applied'], 2) ?>
-                      </td>
-                      <td style="text-align: right; color: var(--gold);">
-                        ₱<?= number_format($pay['interest_applied'], 2) ?>
-                      </td>
-                      <td style="text-align: right; color: #4fa8ff;">
-                        ₱<?= number_format($pay['principal_applied'], 2) ?>
-                      </td>
-                      <td style="text-align: right; color: <?= $pay['excess_cash'] > 0 ? 'var(--gold)' : 'var(--t3)' ?>;">
-                        ₱<?= number_format($pay['excess_cash'], 2) ?>
-                      </td>
-                      <td style="text-align: left; padding-left: 15px; color: var(--t3); font-style: italic; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        <?= htmlspecialchars($pay['remarks'] ?? 'None') ?>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
     </div>
   </div>
+</div>
 
-  <script>
-    const SESSION_MEMBER_ID = <?= json_encode($memberId) ?>;
-    const SAVED_LOAN_DATA = <?= json_encode($existingLoan) ?>;
-    const SAVED_SCHEDULE_DATA = <?= json_encode($existingSchedule) ?>;
+<script>
+  const SESSION_MEMBER_ID = <?= json_encode($memberId) ?>;
+  const SAVED_LOAN_DATA = <?= json_encode($existingLoan) ?>;
+  const SAVED_SCHEDULE_DATA = <?= json_encode($existingSchedule) ?>;
 
-    // 1. Direct and unmutated output from database array
-    const RAW_SERVER_PAYMENTS = <?= json_encode($existingPayments ?? []) ?>;
+  // 1. Direct and unmutated output from database array
+  const RAW_SERVER_PAYMENTS = <?= json_encode($existingPayments ?? []) ?>;
 
-    // 2. Map strictly with the exact properties that lines 375-390 of amortization-engine.js demands
-    const SAVED_PAYMENTS_DATA = RAW_SERVER_PAYMENTS.map(function(p) {
-      return {
-        // Essential raw properties for the JS matching loops
-        created_at: p.created_at,
-        amount_paid: parseFloat(p.amount_paid || 0),
-        penalty_applied: parseFloat(p.penalty_applied || 0),
-        interest_applied: parseFloat(p.interest_applied || 0),
-        principal_applied: parseFloat(p.principal_applied || 0),
-        excess_cash: parseFloat(p.excess_cash || 0),
-        remarks: p.remarks || '',
+  // 2. Map strictly with the exact properties that lines 375-390 of amortization-engine.js demands
+  const SAVED_PAYMENTS_DATA = RAW_SERVER_PAYMENTS.map(function(p) {
+    return {
+      // Essential raw properties for the JS matching loops
+      created_at: p.created_at,
+      amount_paid: parseFloat(p.amount_paid || 0),
+      penalty_applied: parseFloat(p.penalty_applied || 0),
+      interest_applied: parseFloat(p.interest_applied || 0),
+      principal_applied: parseFloat(p.principal_applied || 0),
+      excess_cash: parseFloat(p.excess_cash || 0),
+      remarks: p.remarks || '',
 
-        // Essential camelCase fallback aliases 
-        datetime: p.created_at,
-        amountPaid: parseFloat(p.amount_paid || 0),
-        penaltyApplied: parseFloat(p.penalty_applied || 0),
-        interestApplied: parseFloat(p.interest_applied || 0),
-        principalApplied: parseFloat(p.principal_applied || 0),
-        excess: parseFloat(p.excess_cash || 0)
-      };
-    });
-  </script>
-  <script src="assets/js/amortization-engine.js"></script>
+      // Essential camelCase fallback aliases 
+      datetime: p.created_at,
+      amountPaid: parseFloat(p.amount_paid || 0),
+      penaltyApplied: parseFloat(p.penalty_applied || 0),
+      interestApplied: parseFloat(p.interest_applied || 0),
+      principalApplied: parseFloat(p.principal_applied || 0),
+      excess: parseFloat(p.excess_cash || 0)
+    };
+  });
+</script>
+<script src="/acesv2/assets/js/amortization-engine.js"></script>
