@@ -71,11 +71,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
   // ── ALL OTHER ACTIONS (JSON body) ────────────────────────────────────
   $body = json_decode(file_get_contents('php://input'), true);
 
+  // ── DELETE / DETACH DOCUMENT ACTION ──────────────────────────────────
+  // Sets the row's file_name + file_path to NULL (soft detach) rather than
+  // deleting the physical file, preserving it as a recoverable artefact.
+  // The UNIQUE KEY (loan_id, doc_type) means one row per slot — so we
+  // simply null-out both path columns on that specific row.
+  if ($action === 'delete_document') {
+    $loanId  = intval($body['loan_id']  ?? 0);
+    $docType = $body['doc_type'] ?? '';
+
+    if (!$loanId || !in_array($docType, ['undertaking', 'deed_assignment'])) {
+      echo json_encode(['success' => false, 'error' => 'Invalid parameters.']);
+      exit;
+    }
+
+    try {
+      // Null-out file columns — keeps the row alive for audit history
+      $stmt = $pdo->prepare("
+        UPDATE loan_documents
+        SET file_name = NULL, file_path = NULL, uploaded_at = CURRENT_TIMESTAMP
+        WHERE loan_id = ? AND doc_type = ?
+      ");
+      $stmt->execute([$loanId, $docType]);
+
+      echo json_encode(['success' => true, 'message' => 'Document detached successfully.']);
+    } catch (PDOException $e) {
+      echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+  }
+
   if ($_GET['action'] === 'save_loan') {
     try {
       $pdo->beginTransaction();
-      $loan = $body['loan'];
+      $loan     = $body['loan'];
       $schedule = $body['schedule'];
+
+      // ── Intercept real property child-table payload node ─────────────
+      // The JS sends real_property as a separate object node on the payload.
+      // We also accept individual keys on $loan for backwards compatibility.
+      $rpData = $body['real_property'] ?? null;
+      $isRealProperty = ($loan['collateral'] ?? '') === 'Real Property';
 
       // Check if this member already has a loan record to update or insert
       $checkStmt = $pdo->prepare("SELECT id FROM loans WHERE member_id = ? LIMIT 1");
@@ -83,27 +119,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
       $existingLoanId = $checkStmt->fetchColumn();
 
       if ($existingLoanId) {
-        // Update main loan record
-        $stmt = $pdo->prepare("UPDATE loans SET 
-          loan_type = :loan_type, collateral = :collateral, soa_status = :soa_status, 
-          amort_type = :amort_type, principal_amount = :principal, interest_rate = :interest, 
-          terms = :terms, start_date = :start_date, tct_no = :tct_no, tax_dec_no = :tax_dec_no, 
-          rp_status = :rp_status 
+        // Update main loan record (no RP columns here — they live in the child table)
+        $stmt = $pdo->prepare("UPDATE loans SET
+          loan_type = :loan_type, collateral = :collateral, soa_status = :soa_status,
+          amort_type = :amort_type, principal_amount = :principal, interest_rate = :interest,
+          terms = :terms, start_date = :start_date
           WHERE id = :id");
 
         $stmt->execute([
-          ':loan_type' => $loan['loan_type'],
+          ':loan_type'  => $loan['loan_type'],
           ':collateral' => $loan['collateral'],
           ':soa_status' => $loan['soa_status'],
           ':amort_type' => $loan['amort_type'],
-          ':principal' => $loan['principal'],
-          ':interest' => $loan['interest_rate'],
-          ':terms' => $loan['terms'],
+          ':principal'  => $loan['principal'],
+          ':interest'   => $loan['interest_rate'],
+          ':terms'      => $loan['terms'],
           ':start_date' => $loan['start_date'],
-          ':tct_no' => $loan['tct_no'] ?? null,
-          ':tax_dec_no' => $loan['tax_dec_no'] ?? null,
-          ':rp_status' => $loan['rp_status'] ?? null,
-          ':id' => $existingLoanId
+          ':id'         => $existingLoanId
         ]);
         $loanId = $existingLoanId;
 
@@ -112,31 +144,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
         $delStmt->execute([$loanId]);
       } else {
         // Insert a brand new loan record
-        $stmt = $pdo->prepare("INSERT INTO loans 
-          (member_id, loan_type, collateral, soa_status, amort_type, principal_amount, interest_rate, terms, start_date, tct_no, tax_dec_no, rp_status) 
-          VALUES 
-          (:member_id, :loan_type, :collateral, :soa_status, :amort_type, :principal, :interest, :terms, :start_date, :tct_no, :tax_dec_no, :rp_status)");
+        $stmt = $pdo->prepare("INSERT INTO loans
+          (member_id, loan_type, collateral, soa_status, amort_type, principal_amount, interest_rate, terms, start_date)
+          VALUES
+          (:member_id, :loan_type, :collateral, :soa_status, :amort_type, :principal, :interest, :terms, :start_date)");
 
         $stmt->execute([
-          ':member_id' => $loan['member_id'],
-          ':loan_type' => $loan['loan_type'],
+          ':member_id'  => $loan['member_id'],
+          ':loan_type'  => $loan['loan_type'],
           ':collateral' => $loan['collateral'],
           ':soa_status' => $loan['soa_status'],
           ':amort_type' => $loan['amort_type'],
-          ':principal' => $loan['principal'],
-          ':interest' => $loan['interest_rate'],
-          ':terms' => $loan['terms'],
+          ':principal'  => $loan['principal'],
+          ':interest'   => $loan['interest_rate'],
+          ':terms'      => $loan['terms'],
           ':start_date' => $loan['start_date'],
-          ':tct_no' => $loan['tct_no'] ?? null,
-          ':tax_dec_no' => $loan['tax_dec_no'] ?? null,
-          ':rp_status' => $loan['rp_status'] ?? null
         ]);
         $loanId = $pdo->lastInsertId();
       }
 
+      // ── Real Property Child-Table UPSERT ─────────────────────────────
+      // Only execute when the selected collateral is "Real Property".
+      // Performs a clean UPSERT: INSERT on first save, UPDATE on subsequent saves.
+      if ($isRealProperty) {
+        $tctNo       = $rpData['tct_no']            ?? $loan['tct_no']     ?? null;
+        $taxDecNo    = $rpData['tax_dec_no']         ?? $loan['tax_dec_no'] ?? null;
+        $propPayment = $rpData['property_payments']  ?? $loan['rp_status']  ?? null;
+
+        // Check whether a child-table row already exists for this loan
+        $rpCheckStmt = $pdo->prepare(
+          "SELECT id FROM loan_real_property_details WHERE loan_id = ? LIMIT 1"
+        );
+        $rpCheckStmt->execute([$loanId]);
+        $rpExistingId = $rpCheckStmt->fetchColumn();
+
+        if ($rpExistingId) {
+          // UPDATE existing row
+          $rpStmt = $pdo->prepare(
+            "UPDATE loan_real_property_details
+             SET tct_no = :tct_no, tax_dec_no = :tax_dec_no, property_payments = :property_payments
+             WHERE loan_id = :loan_id"
+          );
+        } else {
+          // INSERT new row
+          $rpStmt = $pdo->prepare(
+            "INSERT INTO loan_real_property_details (loan_id, tct_no, tax_dec_no, property_payments)
+             VALUES (:loan_id, :tct_no, :tax_dec_no, :property_payments)"
+          );
+        }
+
+        $rpStmt->execute([
+          ':loan_id'           => $loanId,
+          ':tct_no'            => $tctNo,
+          ':tax_dec_no'        => $taxDecNo,
+          ':property_payments' => $propPayment,
+        ]);
+      }
+
       // Batch insert schedule matrix breakdown rows
-      $schedStmt = $pdo->prepare("INSERT INTO loan_schedules 
-        (loan_id, period, due_date, amortization, principal_component, interest_component, remaining_principal) 
+      $schedStmt = $pdo->prepare("INSERT INTO loan_schedules
+        (loan_id, period, due_date, amortization, principal_component, interest_component, remaining_principal)
         VALUES (?, ?, ?, ?, ?, ?, ?)");
 
       foreach ($schedule as $row) {
@@ -207,6 +274,7 @@ $memberName = '';
 $existingLoan = null;
 $existingSchedule = [];
 $existingPayments = []; // Tagasalo ng records ng payments mula sa db lifecycle
+$existingDocs     = []; // Keyed by doc_type; holds file_name + file_path for State-B hydration
 
 if ($memberId > 0) {
   try {
@@ -224,6 +292,27 @@ if ($memberId > 0) {
     $existingLoan = $lStmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existingLoan) {
+      // 2a. If collateral is Real Property, fetch child-table fields and
+      //     append them directly to the $existingLoan data array so the
+      //     JS SAVED_LOAN_DATA object receives them transparently.
+      if (($existingLoan['collateral'] ?? '') === 'Real Property') {
+        $rpFetchStmt = $pdo->prepare(
+          "SELECT tct_no, tax_dec_no, property_payments
+           FROM loan_real_property_details
+           WHERE loan_id = ? LIMIT 1"
+        );
+        $rpFetchStmt->execute([$existingLoan['id']]);
+        $rpRow = $rpFetchStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($rpRow) {
+          // Merge child-table fields directly onto the parent array so the
+          // frontend hydration function can access them as top-level keys.
+          $existingLoan['tct_no']            = $rpRow['tct_no'];
+          $existingLoan['tax_dec_no']        = $rpRow['tax_dec_no'];
+          $existingLoan['property_payments'] = $rpRow['property_payments'];
+        }
+      }
+
       // 3. Fetch matching monthly breakdown tables
       $sStmt = $pdo->prepare("SELECT * FROM loan_schedules WHERE loan_id = ? ORDER BY period ASC");
       $sStmt->execute([$existingLoan['id']]);
@@ -233,6 +322,22 @@ if ($memberId > 0) {
       $pStmt = $pdo->prepare("SELECT * FROM loan_payments WHERE member_id = ? ORDER BY created_at ASC");
       $pStmt->execute([$memberId]);
       $existingPayments = $pStmt->fetchAll(PDO::FETCH_ASSOC);
+
+      // 5. Fetch uploaded document paths for State-B hydration of the file UI cards.
+      //    Only rows with a non-null file_path are considered "active" uploads.
+      $docStmt = $pdo->prepare("
+        SELECT doc_type, file_name, file_path
+        FROM loan_documents
+        WHERE loan_id = ? AND file_path IS NOT NULL
+      ");
+      $docStmt->execute([$existingLoan['id']]);
+      $existingDocs = [];
+      foreach ($docStmt->fetchAll(PDO::FETCH_ASSOC) as $docRow) {
+        $existingDocs[$docRow['doc_type']] = [
+          'file_name' => $docRow['file_name'],
+          'file_path' => $docRow['file_path'],
+        ];
+      }
     }
   } catch (PDOException $e) {
     // Silent recovery
@@ -489,33 +594,127 @@ if ($memberId > 0) {
     color: #000;
   }
 
-  .rp-upload-label {
-    display: inline-flex;
+  /* ── Upload Card: State-A (empty drop-zone) ────────────────────────── */
+  .doc-dropzone {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 8px 12px;
-    border: 1px dashed var(--border);
-    border-radius: 6px;
+    padding: 18px 12px;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
     background: var(--raised);
-    color: var(--t2);
+    color: var(--t3);
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     width: 100%;
-    transition: all 0.2s;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
   }
 
-  .rp-upload-label:hover {
+  .doc-dropzone:hover {
     border-color: var(--gold);
     background: var(--gold-dim);
     color: var(--gold);
   }
 
-  .rp-has-file {
-    border-style: solid;
-    border-color: var(--ok);
+  .doc-dropzone svg {
+    opacity: 0.45;
+    transition: opacity 0.2s;
+  }
+
+  .doc-dropzone:hover svg {
+    opacity: 1;
+  }
+
+  /* ── Upload Card: State-B (file banner) ────────────────────────────── */
+  .doc-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(39, 168, 88, 0.35);
+    border-radius: 8px;
     background: rgba(39, 168, 88, 0.06);
+    width: 100%;
+  }
+
+  .doc-banner__icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: rgba(39, 168, 88, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--ok);
+  }
+
+  .doc-banner__meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .doc-banner__name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--font-mono);
+  }
+
+  .doc-banner__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .doc-banner__view {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    font-size: 10px;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 5px;
+    background: rgba(39, 168, 88, 0.12);
+    color: var(--ok);
+    border: 1px solid rgba(39, 168, 88, 0.25);
+    transition: background 0.15s;
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .doc-banner__view:hover {
+    background: rgba(39, 168, 88, 0.22);
+  }
+
+  .doc-banner__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(217, 61, 61, 0.25);
+    border-radius: 5px;
+    background: rgba(217, 61, 61, 0.06);
+    color: var(--danger);
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .doc-banner__remove:hover {
+    background: rgba(217, 61, 61, 0.15);
   }
 
   .am-back {
@@ -651,15 +850,104 @@ if ($memberId > 0) {
         </div>
         <div class="card">
           <div class="card__label">Required Uploads (.PDF Only)</div>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <label class="rp-upload-label" id="lbl_undertaking">
-              <span>Undertaking File</span>
-              <input type="file" id="file_undertaking" accept=".pdf" style="display:none;">
-            </label>
-            <label class="rp-upload-label" id="lbl_deed">
-              <span>Assignment of Deed</span>
-              <input type="file" id="file_deed" accept=".pdf" style="display:none;">
-            </label>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+
+            <?php
+            // ── UNDERTAKING FILE CARD ─────────────────────────────────────
+            // Renders State-B (banner) if a persisted file path exists,
+            // otherwise renders State-A (drop-zone). The PHP base URL is
+            // used for the persistent View href; local blob URLs are
+            // assigned by JS after a new file is chosen.
+            $undertakingDoc = $existingDocs['undertaking'] ?? null;
+            ?>
+            <div id="doc_card_undertaking">
+              <?php if ($undertakingDoc && $undertakingDoc['file_path']): ?>
+                <!-- STATE B — persistent file from database -->
+                <div class="doc-banner" id="doc_banner_undertaking">
+                  <div class="doc-banner__icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="doc-banner__meta">
+                    <div class="doc-banner__name" title="<?= htmlspecialchars($undertakingDoc['file_name']) ?>">
+                      <?= htmlspecialchars($undertakingDoc['file_name']) ?>
+                    </div>
+                  </div>
+                  <div class="doc-banner__actions">
+                    <a href="/acesv2/<?= htmlspecialchars($undertakingDoc['file_path']) ?>"
+                      target="_blank"
+                      class="doc-banner__view"
+                      id="doc_view_undertaking">👁 View</a>
+                    <button type="button"
+                      class="doc-banner__remove"
+                      title="Remove document"
+                      onclick="removeUploadedDocument('undertaking')">🗑</button>
+                  </div>
+                </div>
+              <?php else: ?>
+                <!-- STATE A — empty drop-zone -->
+                <label class="doc-dropzone" id="doc_zone_undertaking" for="file_undertaking">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <span>Undertaking File</span>
+                  <span style="font-weight:400; font-size:10px; opacity:0.6;">Click to browse PDF</span>
+                </label>
+              <?php endif; ?>
+              <input type="file" id="file_undertaking" accept=".pdf" style="display:none;"
+                onchange="handleFileChosen(this, 'undertaking')">
+            </div>
+
+            <?php
+            // ── DEED OF ASSIGNMENT FILE CARD ──────────────────────────────
+            $deedDoc = $existingDocs['deed_assignment'] ?? null;
+            ?>
+            <div id="doc_card_deed">
+              <?php if ($deedDoc && $deedDoc['file_path']): ?>
+                <!-- STATE B — persistent file from database -->
+                <div class="doc-banner" id="doc_banner_deed">
+                  <div class="doc-banner__icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="doc-banner__meta">
+                    <div class="doc-banner__name" title="<?= htmlspecialchars($deedDoc['file_name']) ?>">
+                      <?= htmlspecialchars($deedDoc['file_name']) ?>
+                    </div>
+                  </div>
+                  <div class="doc-banner__actions">
+                    <a href="/acesv2/<?= htmlspecialchars($deedDoc['file_path']) ?>"
+                      target="_blank"
+                      class="doc-banner__view"
+                      id="doc_view_deed">👁 View</a>
+                    <button type="button"
+                      class="doc-banner__remove"
+                      title="Remove document"
+                      onclick="removeUploadedDocument('deed_assignment')">🗑</button>
+                  </div>
+                </div>
+              <?php else: ?>
+                <!-- STATE A — empty drop-zone -->
+                <label class="doc-dropzone" id="doc_zone_deed" for="file_deed">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <span>Assignment of Deed</span>
+                  <span style="font-weight:400; font-size:10px; opacity:0.6;">Click to browse PDF</span>
+                </label>
+              <?php endif; ?>
+              <input type="file" id="file_deed" accept=".pdf" style="display:none;"
+                onchange="handleFileChosen(this, 'deed_assignment')">
+            </div>
+
           </div>
         </div>
       </div>
@@ -877,6 +1165,12 @@ if ($memberId > 0) {
   const SESSION_MEMBER_ID = <?= json_encode($memberId) ?>;
   const SAVED_LOAN_DATA = <?= json_encode($existingLoan) ?>;
   const SAVED_SCHEDULE_DATA = <?= json_encode($existingSchedule) ?>;
+  // Persisted loan ID — available immediately so removeUploadedDocument()
+  // can issue the delete_document request without waiting for save_loan.
+  const SAVED_LOAN_ID = <?= json_encode($existingLoan['id'] ?? null) ?>;
+  // Keyed by doc_type; tells the JS layer which slots already have a
+  // server-side file so it can skip re-uploading them on save.
+  const EXISTING_DOCS = <?= json_encode($existingDocs) ?>;
 
   // 1. Direct and unmutated output from database array
   const RAW_SERVER_PAYMENTS = <?= json_encode($existingPayments ?? []) ?>;

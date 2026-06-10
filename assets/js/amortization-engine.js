@@ -572,16 +572,75 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ── DOCUMENT UPLOAD HELPER ────────────────────────────────────────────
-  // Called after save_loan succeeds so we have a valid loan_id.
-  // Silently skips if no file is selected for that input.
+  // ── DOCUMENT LIFECYCLE HELPERS ───────────────────────────────────────
+
+  // ── handleFileChosen ─────────────────────────────────────────────────
+  // Fired by onchange on each hidden <input type="file">.
+  // Immediately creates a local blob URL so the user can verify the PDF
+  // in a new tab BEFORE hitting Save, then swaps the card into State B.
+  // The actual server upload still happens inside uploadDocumentIfSelected
+  // which is called after save_loan succeeds and a loan_id is confirmed.
+  const handleFileChosen = (inputEl, docType) => {
+    if (!inputEl.files || inputEl.files.length === 0) return;
+    const file = inputEl.files[0];
+
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Only PDF files are accepted. Please select a valid PDF.");
+      inputEl.value = "";
+      return;
+    }
+
+    // Build a temporary object URL for instant in-browser preview
+    const blobUrl = URL.createObjectURL(file);
+
+    // Determine which card wrapper and key suffix to use
+    const suffix = docType === "undertaking" ? "undertaking" : "deed";
+    const cardEl = document.getElementById(`doc_card_${suffix}`);
+    if (!cardEl) return;
+
+    // Inject a State-B banner, wiring the View link to the blob URL
+    cardEl.innerHTML = `
+      <div class="doc-banner" id="doc_banner_${suffix}">
+        <div class="doc-banner__icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="doc-banner__meta">
+          <div class="doc-banner__name" title="${file.name}">${file.name}</div>
+        </div>
+        <div class="doc-banner__actions">
+          <a href="${blobUrl}" target="_blank" class="doc-banner__view" id="doc_view_${suffix}">👁 View</a>
+          <button type="button" class="doc-banner__remove" title="Remove document"
+                  onclick="removeUploadedDocument('${docType}')">🗑</button>
+        </div>
+      </div>
+      <input type="file" id="file_${docType === "undertaking" ? "undertaking" : "deed"}"
+             accept=".pdf" style="display:none;"
+             onchange="handleFileChosen(this, '${docType}')">
+    `;
+  };
+
+  // ── uploadDocumentIfSelected ──────────────────────────────────────────
+  // Called after save_loan succeeds. Silently skips if:
+  //  (a) the input has no file selected (user didn't touch it), OR
+  //  (b) EXISTING_DOCS already has a live path for this slot (already on server).
+  // This prevents re-uploading a file that the user never changed.
   const uploadDocumentIfSelected = async (inputId, docType, loanId) => {
+    // If the server already has a file for this doc_type, skip upload.
+    if (
+      typeof EXISTING_DOCS !== "undefined" &&
+      EXISTING_DOCS[docType]?.file_path
+    )
+      return;
+
     const input = document.getElementById(inputId);
     if (!input || !input.files || input.files.length === 0) return;
 
     const formData = new FormData();
     formData.append("document", input.files[0]);
-    formData.append("loan_id",  loanId);
+    formData.append("loan_id", loanId);
     formData.append("doc_type", docType);
 
     try {
@@ -598,7 +657,75 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // ── INTERCEPT & ASYNC PERSISTENCE CALL ───────────────────────────
+  // ── removeUploadedDocument ────────────────────────────────────────────
+  // Global function (called via inline onclick from PHP-rendered HTML).
+  // Issues a POST to delete_document, then resets the card to State A.
+  // If no loan has been saved yet (SAVED_LOAN_ID is null), we only reset
+  // the local UI — there is nothing to delete on the server.
+  window.removeUploadedDocument = async (docType) => {
+    const suffix = docType === "undertaking" ? "undertaking" : "deed";
+    const cardEl = document.getElementById(`doc_card_${suffix}`);
+    const inputId =
+      docType === "undertaking" ? "file_undertaking" : "file_deed";
+    const label =
+      docType === "undertaking" ? "Undertaking File" : "Assignment of Deed";
+
+    const activeLoanId =
+      typeof SAVED_LOAN_ID !== "undefined" && SAVED_LOAN_ID
+        ? SAVED_LOAN_ID
+        : null;
+
+    if (activeLoanId) {
+      // Confirm before making the destructive server call
+      if (
+        !confirm(
+          `Remove this document? This will detach it from the loan record.`,
+        )
+      )
+        return;
+
+      try {
+        const res = await fetch("amortization.php?action=delete_document", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ loan_id: activeLoanId, doc_type: docType }),
+        });
+        const result = await res.json();
+        if (!result.success) {
+          alert("Server error while removing document: " + result.error);
+          return;
+        }
+
+        // Clear the EXISTING_DOCS slot so a new upload can proceed on next Save
+        if (typeof EXISTING_DOCS !== "undefined" && EXISTING_DOCS[docType]) {
+          EXISTING_DOCS[docType] = null;
+        }
+      } catch (err) {
+        console.error("Remove document network error:", err);
+        alert("Network error — could not reach the server. Please try again.");
+        return;
+      }
+    }
+
+    // ── Reset card to State A (drop-zone) ────────────────────────────
+    if (!cardEl) return;
+    cardEl.innerHTML = `
+      <label class="doc-dropzone" id="doc_zone_${suffix}" for="${inputId}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>${label}</span>
+        <span style="font-weight:400; font-size:10px; opacity:0.6;">Click to browse PDF</span>
+      </label>
+      <input type="file" id="${inputId}" accept=".pdf" style="display:none;"
+             onchange="handleFileChosen(this, '${docType}')">
+    `;
+  };
+
+  // Expose to global scope — called from PHP-rendered inline onchange attributes
+  window.handleFileChosen = handleFileChosen;
   saveButton.addEventListener("click", async () => {
     if (!form.checkValidity()) {
       form.reportValidity();
@@ -629,9 +756,16 @@ document.addEventListener("DOMContentLoaded", () => {
         interest_rate: parseFloat(interestInput.value),
         terms: parseInt(termsInput.value),
         start_date: startDateInput.value,
+      },
+      // ── Real Property child-table node ────────────────────────────────
+      // Compiled separately so the backend can route it to the dedicated
+      // loan_real_property_details table via its own UPSERT pipeline.
+      // Sent on every save; the backend ignores it when collateral is not
+      // "Real Property", so there is no risk of spurious writes.
+      real_property: {
         tct_no: rpTct.value || null,
         tax_dec_no: rpTax.value || null,
-        rp_status: rpPayments.value || null,
+        property_payments: rpPayments.value || null,
       },
       schedule: mappedSchedule,
     };
@@ -650,8 +784,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (result.success) {
         // Upload any selected Real Property documents
         if (result.loan_id) {
-          await uploadDocumentIfSelected("file_undertaking",   "undertaking",     result.loan_id);
-          await uploadDocumentIfSelected("file_deed",          "deed_assignment",  result.loan_id);
+          await uploadDocumentIfSelected(
+            "file_undertaking",
+            "undertaking",
+            result.loan_id,
+          );
+          await uploadDocumentIfSelected(
+            "file_deed",
+            "deed_assignment",
+            result.loan_id,
+          );
         }
         alert(result.message);
       } else {
@@ -687,6 +829,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (typeof handleCollateralToggles === "function")
       handleCollateralToggles();
+
+    // ── 1b. Hydrate Real Property fields ─────────────────────────────
+    // After handleCollateralToggles() has made the section visible,
+    // populate the three child-table fields that the PHP backend appended
+    // to SAVED_LOAN_DATA when collateral === "Real Property".
+    // Guards prevent errors if the section is absent or the fields are null.
+    if (SAVED_LOAN_DATA.collateral === "Real Property") {
+      if (rpTct && SAVED_LOAN_DATA.tct_no != null)
+        rpTct.value = SAVED_LOAN_DATA.tct_no;
+
+      if (rpTax && SAVED_LOAN_DATA.tax_dec_no != null)
+        rpTax.value = SAVED_LOAN_DATA.tax_dec_no;
+
+      if (rpPayments && SAVED_LOAN_DATA.property_payments != null)
+        rpPayments.value = SAVED_LOAN_DATA.property_payments;
+    }
 
     // ── 2. Rebuild Schedule Array from DB rows ────────────────────────
     // Store values under BOTH naming conventions so the rest of the
