@@ -71,6 +71,62 @@ if ($auth->isLoggedIn()) {
         }
         exit();
     }
+
+    // ── ADMIN PROFILE UPDATE ──────────────────────────────────────────────
+    if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $adminId  = $_SESSION['user_id'] ?? 0;
+        $newName  = trim($_POST['name']             ?? '');
+        $newUser  = trim($_POST['username']         ?? '');
+        $newPass  =      $_POST['password']         ?? '';
+        $confPass =      $_POST['confirm_password'] ?? '';
+
+        // ── Avatar upload ─────────────────────────────────────────────
+        $avatarFilename = $_SESSION['avatar'] ?? null;
+        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+            $ext     = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            if (in_array($ext, $allowed)) {
+                $uploadDir = __DIR__ . '/assets/img/uploads/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                $avatarFilename = 'user_' . $adminId . '_' . time() . '.' . $ext;
+                move_uploaded_file($_FILES['avatar']['tmp_name'], $uploadDir . $avatarFilename);
+            }
+        }
+
+        // ── Build query — only update password if the field was filled ─
+        try {
+            $fields = [
+                ':name'   => $newName,
+                ':user'   => $newUser,
+                ':avatar' => $avatarFilename,
+                ':id'     => $adminId,
+            ];
+
+            if ($newPass !== '') {
+                if ($newPass !== $confPass) {
+                    header("Location: index.php?page=settings&error=password_mismatch");
+                    exit();
+                }
+                $fields[':password'] = password_hash($newPass, PASSWORD_DEFAULT);
+                $sql = "UPDATE admin SET name=:name, username=:user, avatar=:avatar, password=:password WHERE id=:id";
+            } else {
+                $sql = "UPDATE admin SET name=:name, username=:user, avatar=:avatar WHERE id=:id";
+            }
+
+            $stmt = $db->prepare($sql);
+            $stmt->execute($fields);
+
+            // ── Sync session so the navbar and page reflect changes immediately
+            $_SESSION['name']     = $newName;
+            $_SESSION['username'] = $newUser;
+            $_SESSION['avatar']   = $avatarFilename;
+
+            header("Location: index.php?page=settings&status=success");
+        } catch (PDOException $e) {
+            header("Location: index.php?page=settings&status=error");
+        }
+        exit();
+    }
 }
 ?>
 <!DOCTYPE html>

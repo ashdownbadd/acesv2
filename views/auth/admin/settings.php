@@ -14,6 +14,20 @@ if (!isset($_SESSION['user_id'])) {
             <a href="?page=dashboard" class="c-back-btn">← Back</a>
         </div>
 
+        <?php if (($_GET['status'] ?? '') === 'success'): ?>
+            <div style="margin-bottom:16px; padding:12px 16px; background:rgba(39,168,88,0.1); border:1px solid rgba(39,168,88,0.3); border-radius:8px; color:#27a858; font-size:13px; font-weight:600;">
+                ✓ Profile updated successfully.
+            </div>
+        <?php elseif (($_GET['status'] ?? '') === 'error'): ?>
+            <div style="margin-bottom:16px; padding:12px 16px; background:rgba(217,61,61,0.08); border:1px solid rgba(217,61,61,0.25); border-radius:8px; color:#d93d3d; font-size:13px; font-weight:600;">
+                ✗ Something went wrong. Please try again.
+            </div>
+        <?php elseif (($_GET['error'] ?? '') === 'password_mismatch'): ?>
+            <div style="margin-bottom:16px; padding:12px 16px; background:rgba(217,61,61,0.08); border:1px solid rgba(217,61,61,0.25); border-radius:8px; color:#d93d3d; font-size:13px; font-weight:600;">
+                ✗ Passwords do not match. No changes were saved.
+            </div>
+        <?php endif; ?>
+
         <form id="settings-form" action="?action=update_profile" method="POST" enctype="multipart/form-data" class="c-settings-grid">
 
             <div class="c-bento-card c-bento-card--avatar">
