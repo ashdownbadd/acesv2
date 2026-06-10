@@ -34,6 +34,24 @@ if ($auth->isLoggedIn()) {
     $isAdmin = ($_SESSION['role'] ?? '') === 'admin';
     $isMember = ($_SESSION['role'] ?? '') === 'member';
 
+    // ── DELETE MEMBER LOGIC ──────────────────────────────────────────────
+    if ($action === 'delete_member' && $isAdmin) {
+        $deleteId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+        if ($deleteId > 0) {
+            try {
+                $stmt = $db->prepare("DELETE FROM members WHERE id = ?");
+                $stmt->execute([$deleteId]);
+                
+                $_SESSION['toast_success'] = "Member deleted successfully!";
+                header("Location: index.php?page=dashboard&status=deleted_success");
+            } catch (PDOException $e) {
+                header("Location: index.php?page=dashboard&status=error");
+            }
+            exit();
+        }
+    }
+
     if ($action === 'update_member_credentials' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $memberId = $_SESSION['member_id'] ?? 0;
 
