@@ -20,8 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_member'])) {
         $loanRepo->create($_POST);
     }
 
+    // ── PALITAN NG GANITO NA WALANG HEADER REDIRECT ERROR ──
     $_SESSION['toast_success'] = "Changes saved successfully!";
-    header("Location: index.php?page=member_view&member_id=" . (int)$_POST['member_id']);
+    $redirectTo = "index.php?page=member_view&member_id=" . (int)$_POST['member_id'];
+    echo "<script>window.location.href='$redirectTo';</script>";
     exit();
 }
 

@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_member'])) {
     $lastName        = $_POST['last_name'] ?? '';
     $suffix          = $_POST['suffix'] ?? '';
     $birthdate       = !empty($_POST['birthdate']) ? $_POST['birthdate'] : null;
-    $deathDate       = !empty($_POST['death_date']) ? $_POST['death_date'] : null;
+    $deathDate       = !empty($_POST['death_date']) ? $_POST['death_date'] : null; // Ligtas kahit disabled sa HTML dahil sa null fallback
     $civilStatus     = $_POST['civil_status'] ?? 'Single';
     $address         = $_POST['address'] ?? '';
     $membershipType  = $_POST['membership_type'] ?? 'Regular';
@@ -27,8 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_member'])) {
     $phone           = $_POST['phone_number'] ?? '';
     $tel             = $_POST['telephone_number'] ?? '';
     $remarks         = $_POST['remarks'] ?? '';
-    $rawBalance = $_POST['balance'] ?? '0';
-    $initialBalance = (float)str_replace(',', '', $rawBalance);
+
+    // Malinis na pag-sanitize ng currency decimal values
+    $rawBalance      = $_POST['balance'] ?? '0';
+    $initialBalance  = (float)str_replace(',', '', $rawBalance);
 
     $sql = "INSERT INTO members (
                 member_id, prefix, first_name, middle_name, last_name, suffix, 
@@ -58,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_member'])) {
         $remarks,
         $initialBalance
     ])) {
-        $_SESSION['toast_success'] = "New member registered successfully!";
-        header("Location: index.php?page=dashboard");
+        $_SESSION['toast_success'] = "Member added successfully!";
+        echo "<script>window.location.href='index.php?page=dashboard';</script>";
         exit();
     }
 }
